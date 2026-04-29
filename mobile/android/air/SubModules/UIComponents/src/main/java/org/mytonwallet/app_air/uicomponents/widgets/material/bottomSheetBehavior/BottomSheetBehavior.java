@@ -726,6 +726,15 @@ public class BottomSheetBehavior<V extends View> extends CoordinatorLayout.Behav
     @Override
     public boolean onInterceptTouchEvent(
         @NonNull CoordinatorLayout parent, @NonNull V child, @NonNull MotionEvent event) {
+        try {
+            return onInterceptTouchEventInternal(parent, child, event);
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private boolean onInterceptTouchEventInternal(
+        @NonNull CoordinatorLayout parent, @NonNull V child, @NonNull MotionEvent event) {
         if (!child.isShown() || !draggable) {
             ignoreEvents = true;
             return false;
@@ -791,6 +800,15 @@ public class BottomSheetBehavior<V extends View> extends CoordinatorLayout.Behav
 
     @Override
     public boolean onTouchEvent(
+        @NonNull CoordinatorLayout parent, @NonNull V child, @NonNull MotionEvent event) {
+        try {
+            return onTouchEventInternal(parent, child, event);
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private boolean onTouchEventInternal(
         @NonNull CoordinatorLayout parent, @NonNull V child, @NonNull MotionEvent event) {
         if (!child.isShown()) {
             return false;

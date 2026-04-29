@@ -1061,15 +1061,16 @@ class TabsVC(context: Context) : WViewController(context), WThemedView, WProtect
     }
 
     private fun openUrl(config: InAppBrowserConfig) {
+        val window = window ?: return
         val browserVC =
             InAppBrowserVC(
                 context,
-                window?.navigationControllers?.last()?.viewControllers?.last() as? TabsVC,
+                window.navigationControllers.lastOrNull()?.viewControllers?.lastOrNull() as? TabsVC,
                 config
             )
-        val nav = WNavigationController(window!!)
+        val nav = WNavigationController(window)
         nav.setRoot(browserVC)
-        window?.present(nav)
+        window.present(nav)
     }
 
     override fun onWalletEvent(walletEvent: WalletEvent) {

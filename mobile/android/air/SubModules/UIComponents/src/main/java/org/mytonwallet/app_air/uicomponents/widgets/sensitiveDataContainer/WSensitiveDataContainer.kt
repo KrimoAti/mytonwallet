@@ -53,7 +53,9 @@ class WSensitiveDataContainer<V : View>(
         }
     }
 
-    private var isShowingMask: Boolean = false
+    private enum class MaskState { HIDDEN, ANIMATING_IN, SHOWING, ANIMATING_OUT }
+
+    private var maskState: MaskState = MaskState.HIDDEN
 
     init {
         addView(contentView, LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply {
@@ -88,14 +90,14 @@ class WSensitiveDataContainer<V : View>(
 
     fun updateProtectedView(animated: Boolean) {
         if (isSensitiveData && WGlobalStorage.getIsSensitiveDataProtectionOn()) {
-            if (isShowingMask)
+            if (maskState == MaskState.SHOWING || maskState == MaskState.ANIMATING_IN)
                 return
             if (maskConfig.protectContentLayoutSize && (layoutParams == null || contentView.height == 0)) {
                 // View is not attached to the window yet, wait...
                 return
             }
             maskView.initMask()
-            isShowingMask = true
+            maskState = if (animated) MaskState.ANIMATING_IN else MaskState.SHOWING
             maskView.setIntersecting(true)
             maskView.visibility = VISIBLE
             if (_maskPivotYPercent > 0f)
@@ -111,7 +113,8 @@ class WSensitiveDataContainer<V : View>(
                     duration = AnimationConstants.VERY_QUICK_ANIMATION
                     playTogether(animations)
                     doOnEnd {
-                        if (isShowingMask) {
+                        if (maskState == MaskState.ANIMATING_IN) {
+                            maskState = MaskState.SHOWING
                             hideContent()
                         }
                     }
@@ -123,9 +126,9 @@ class WSensitiveDataContainer<V : View>(
             }
         } else {
             contentView.visibility = VISIBLE
-            if (!isShowingMask)
+            if (maskState == MaskState.HIDDEN || maskState == MaskState.ANIMATING_OUT)
                 return
-            isShowingMask = false
+            maskState = if (animated) MaskState.ANIMATING_OUT else MaskState.HIDDEN
             if (maskConfig.protectContentLayoutSize)
                 layoutParams = layoutParams.apply {
                     width = WRAP_CONTENT
@@ -140,7 +143,8 @@ class WSensitiveDataContainer<V : View>(
                     duration = AnimationConstants.VERY_QUICK_ANIMATION
                     playTogether(animations)
                     doOnEnd {
-                        if (!isShowingMask) {
+                        if (maskState == MaskState.ANIMATING_OUT) {
+                            maskState = MaskState.HIDDEN
                             maskView.setIntersecting(false)
                             maskView.visibility = GONE
                         }
@@ -157,7 +161,7 @@ class WSensitiveDataContainer<V : View>(
 
     fun setMaskCols(cols: Int) {
         maskView.cols = cols
-        if (!isShowingMask)
+        if (maskState == MaskState.HIDDEN)
             return
         val changed = maskView.initMask()
         if (!changed)

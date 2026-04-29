@@ -123,7 +123,7 @@ public final class WalletSettingsVC: SettingsBaseVC, WSegmentedController.Delega
             defaultItemId: viewModel.currentFilter.rawValue,
             barHeight: 44,
             animationSpeed: .slow,
-            capsuleFillColor: .airBundle("DarkCapsuleColor"),
+            capsuleFillColor: .air.darkCapsule,
             delegate: self
         )
         self.segmentedController = segmentedController

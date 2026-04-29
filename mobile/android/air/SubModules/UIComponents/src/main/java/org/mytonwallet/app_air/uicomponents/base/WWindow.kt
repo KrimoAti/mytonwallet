@@ -295,14 +295,25 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
         get() {
             return navigationControllerOverlays.lastOrNull()
         }
-    var isAnimating: Boolean = false
+
+    enum class NavAnimation {
+        NONE,
+        PRESENT_WAITING_FOR_LAYOUT,
+        PRESENTING,
+        DISMISSING,
+    }
+
+    var navAnimation: NavAnimation = NavAnimation.NONE
         private set(value) {
             field = value
-            if (isAnimating)
-                blockTouches()
-            else
+            if (value == NavAnimation.NONE)
                 unblockTouches()
+            else
+                blockTouches()
         }
+    val isAnimating: Boolean
+        get() = navAnimation != NavAnimation.NONE
+
     val topViewController: WViewController?
         get() {
             return navigationControllers.lastOrNull()?.viewControllers?.lastOrNull()
@@ -394,6 +405,12 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
         animated: Boolean = true,
         onCompletion: (() -> Unit)? = null
     ) {
+        if (navAnimation == NavAnimation.PRESENT_WAITING_FOR_LAYOUT) {
+            windowView.doOnLayout { present(navigationController, animated, onCompletion) }
+            return
+        }
+        if (navAnimation != NavAnimation.NONE)
+            activeAnimator?.end()
         Logger.d(
             Logger.LogTag.SCREEN,
             "presentNav: rootVC=${navigationController.viewControllers.firstOrNull()?.TAG} navHash=${navigationController.hashCode()}"
@@ -424,8 +441,9 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
         )
         navigationController.y = windowView.bottom.toFloat()
         val wasAnimating = isAnimating
-        isAnimating = true
+        navAnimation = NavAnimation.PRESENT_WAITING_FOR_LAYOUT
         windowView.doOnLayout {
+            navAnimation = NavAnimation.PRESENTING
             val shouldPresentFullScreen = !navigationController.presentationConfig.isBottomSheet ||
                 navigationController.viewControllers.firstOrNull()?.isExpandable == true
             val finalY =
@@ -438,7 +456,7 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
                 navigationController.y = finalY.toFloat()
                 navigationController.viewDidAppear()
                 removePrevNavigationControllersFromHierarchy()
-                isAnimating = false
+                navAnimation = NavAnimation.NONE
                 onCompletion?.invoke()
                 return@doOnLayout
             }
@@ -462,7 +480,7 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
                         WGlobalStorage.decDoNotSynchronize()
                         navigationController.viewDidAppear()
                         activeAnimator = null
-                        isAnimating = false
+                        navAnimation = NavAnimation.NONE
                     }
                     doOnEnd {
                         WGlobalStorage.decDoNotSynchronize()
@@ -472,7 +490,7 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
                         }
                         removePrevNavigationControllersFromHierarchy()
                         activeAnimator = null
-                        isAnimating = false
+                        navAnimation = NavAnimation.NONE
                         onCompletion?.invoke()
                     }
 
@@ -518,6 +536,10 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
         animated: Boolean = true,
         onCompletion: (() -> Unit)? = null
     ): Boolean {
+        if (navAnimation == NavAnimation.PRESENT_WAITING_FOR_LAYOUT) {
+            windowView.doOnLayout { dismissLastNav(animation, animated, onCompletion) }
+            return true
+        }
         if (navigationControllers.size < 2) {
             moveTaskToBack(true)
             return false
@@ -526,6 +548,22 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
         if (navigationController?.isDismissed == true)
             return true
         navigationController?.willBeDismissed()
+        val prevNavigationController =
+            navigationControllers.getOrNull(navigationControllers.size - 2)
+        val skipPrevNavAnimation =
+            navAnimation == NavAnimation.PRESENTING && prevNavigationController?.parent != null
+        when (navAnimation) {
+            NavAnimation.PRESENTING -> {
+                activeAnimator?.cancel()
+            }
+
+            NavAnimation.DISMISSING -> {
+                activeAnimator?.end()
+            }
+
+            NavAnimation.NONE -> {}
+            NavAnimation.PRESENT_WAITING_FOR_LAYOUT -> {}
+        }
         addPrevNavigationControllersToHierarchy()
         val lastOverlay = navigationControllerOverlays.lastOrNull()
         val startOverlayAlpha = lastOverlay?.alpha ?: 0f
@@ -539,7 +577,7 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
             windowView.removeView(lastOverlay)
             windowView.removeView(navigationController)
             activeAnimator = null
-            isAnimating = false
+            navAnimation = NavAnimation.NONE
             onCompletion?.invoke()
             if (navigationController?.presentationConfig?.overFullScreen == true)
                 navigationControllers.lastOrNull()?.viewDidAppear()
@@ -553,7 +591,7 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
             animationEnded()
             return true
         }
-        isAnimating = true
+        navAnimation = NavAnimation.DISMISSING
         val startAlpha = navigationController?.alpha ?: 1f
         when (animation) {
             DismissAnimation.DEFAULT -> {
@@ -588,17 +626,21 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
 
             DismissAnimation.SCALE_IN -> {
                 val prevNavigationController = navigationControllers[navigationControllers.size - 2]
-                prevNavigationController.scaleX = 1.2f
-                prevNavigationController.scaleY = 1.2f
+                if (!skipPrevNavAnimation) {
+                    prevNavigationController.scaleX = 1.2f
+                    prevNavigationController.scaleY = 1.2f
+                }
                 lastOverlay?.alpha = 0f
                 activeAnimator?.cancel()
                 activeAnimator = ValueAnimator.ofInt(0, 1).apply {
                     duration = AnimationConstants.QUICK_ANIMATION
 
                     addUpdateListener {
-                        val scale = 1.2f - 0.2f * animatedFraction
-                        prevNavigationController.scaleX = scale
-                        prevNavigationController.scaleY = scale
+                        if (!skipPrevNavAnimation) {
+                            val scale = 1.2f - 0.2f * animatedFraction
+                            prevNavigationController.scaleX = scale
+                            prevNavigationController.scaleY = scale
+                        }
                         navigationController?.alpha = startAlpha * (1 - animatedFraction)
                     }
                     addListener(object : AnimatorListenerAdapter() {
@@ -742,12 +784,14 @@ abstract class WWindow : AppCompatActivity(), WThemedView, WProtectedView {
         if (navigationController?.presentationConfig?.overFullScreen == true) {
             fun presentPrevScreen(i: Int) {
                 navigationControllers[i].let {
-                    windowView.addView(it, 0)
+                    if (it.parent == null)
+                        windowView.addView(it, 0)
                     it.visibility = View.VISIBLE
                     it.viewWillAppear()
                     if (!it.presentationConfig.overFullScreen) {
                         navigationControllerOverlays[i]?.let { overlay ->
-                            windowView.addView(overlay, 0)
+                            if (overlay.parent == null)
+                                windowView.addView(overlay, 0)
                             overlay.visibility = View.VISIBLE
                         }
                         presentPrevScreen(i - 1)

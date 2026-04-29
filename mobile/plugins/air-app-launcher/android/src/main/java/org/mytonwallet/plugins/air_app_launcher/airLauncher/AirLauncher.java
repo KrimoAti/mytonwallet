@@ -12,6 +12,7 @@ import org.mytonwallet.app_air.airasframework.MainWindow;
 import org.mytonwallet.app_air.airasframework.WidgetConfigurationWindow;
 import org.mytonwallet.app_air.airasframework.splash.SplashVC;
 import org.mytonwallet.app_air.uiwidgets.configurations.WidgetsConfigurations;
+import org.mytonwallet.app_air.walletbasecontext.utils.ApplicationContextHolder;
 import org.mytonwallet.app_air.walletcontext.globalStorage.IGlobalStorageProvider;
 import org.mytonwallet.app_air.walletcontext.globalStorage.WGlobalStorage;
 import org.mytonwallet.app_air.walletcontext.secureStorage.WSecureStorage;
@@ -65,6 +66,7 @@ public class AirLauncher {
 
   public AirLauncher(Activity currentActivity) {
     this.applicationContext = currentActivity.getApplicationContext();
+    ApplicationContextHolder.INSTANCE.update(applicationContext);
     try {
       System.loadLibrary("native-utils");
     } catch (Throwable ignored) {

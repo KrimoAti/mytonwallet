@@ -79,63 +79,90 @@ class ActivityHelpers {
          *
          * This ensures that when we receive initial activities, we don't keep old stale
          * activities that might have been cached from before.
+         *
+         * @param fallback consulted when an id is missing from `cachedActivities` so the
+         *   comparator stays transitive; mirrors web's `addNewActivities` which extends
+         *   `byId` with the incoming activities before merging.
          */
         fun mergeActivityIdsToMaxTime(
             newIds: List<String>,
             existingIds: List<String>,
-            cachedActivities: Map<String, MApiTransaction>
+            cachedActivities: Map<String, MApiTransaction>,
+            fallback: List<MApiTransaction> = emptyList()
         ): List<String> {
             if (newIds.isEmpty() && existingIds.isEmpty()) {
                 return emptyList()
             } else if (newIds.isEmpty()) {
                 return existingIds.distinct().sortedWith { id1, id2 ->
-                    compareActivityIds(id1, id2, cachedActivities)
+                    compareActivityIds(id1, id2, cachedActivities, fallback)
                 }
             } else if (existingIds.isEmpty()) {
                 return newIds.distinct().sortedWith { id1, id2 ->
-                    compareActivityIds(id1, id2, cachedActivities)
+                    compareActivityIds(id1, id2, cachedActivities, fallback)
                 }
             }
 
-            val timestamp1 = newIds.lastOrNull()?.let { cachedActivities[it]?.timestamp } ?: 0
-            val timestamp2 = existingIds.lastOrNull()?.let { cachedActivities[it]?.timestamp } ?: 0
+            val timestamp1 = newIds.lastOrNull()
+                ?.let { resolve(it, cachedActivities, fallback)?.timestamp } ?: 0
+            val timestamp2 = existingIds.lastOrNull()
+                ?.let { resolve(it, cachedActivities, fallback)?.timestamp } ?: 0
             val cutoffTimestamp = maxOf(timestamp1, timestamp2)
 
             return (newIds + existingIds)
                 .distinct()
-                .filter { id -> (cachedActivities[id]?.timestamp ?: 0) >= cutoffTimestamp }
-                .sortedWith { id1, id2 -> compareActivityIds(id1, id2, cachedActivities) }
+                .filter { id ->
+                    (resolve(id, cachedActivities, fallback)?.timestamp ?: 0) >= cutoffTimestamp
+                }
+                .sortedWith { id1, id2 ->
+                    compareActivityIds(id1, id2, cachedActivities, fallback)
+                }
         }
 
         /**
          * Merge activity IDs without cutoff (for new activities, pagination, etc.)
+         *
+         * @param fallback consulted when an id is missing from `byId` so the comparator
+         *   stays transitive; mirrors web's `addNewActivities` which extends `byId` with
+         *   the incoming activities before merging.
          */
         fun mergeSortedActivityIds(
             newIds: List<String>,
             existingIds: List<String>,
-            byId: Map<String, MApiTransaction>
+            byId: Map<String, MApiTransaction>,
+            fallback: List<MApiTransaction> = emptyList()
         ): List<String> {
             return (newIds + existingIds)
                 .distinct()
-                .sortedWith { id1, id2 -> compareActivityIds(id1, id2, byId) }
+                .sortedWith { id1, id2 -> compareActivityIds(id1, id2, byId, fallback) }
         }
 
         /**
          * Compare activity IDs by their transaction timestamp (newest first), then by ID.
+         * Unresolved ids sort last so the comparator stays transitive (mirrors web's
+         * `compareActivities` null-handling: missing → +1, present → -1, both missing → 0).
          */
         private fun compareActivityIds(
             id1: String,
             id2: String,
-            byId: Map<String, MApiTransaction>
+            byId: Map<String, MApiTransaction>,
+            fallback: List<MApiTransaction>
         ): Int {
-            val activity1 = byId[id1]
-            val activity2 = byId[id2]
+            val activity1 = resolve(id1, byId, fallback)
+            val activity2 = resolve(id2, byId, fallback)
             return when {
-                activity1 != null && activity2 != null -> {
-                    sorter(activity1, activity2)
-                }
-                else -> id2.compareTo(id1)
+                activity1 != null && activity2 != null -> sorter(activity1, activity2)
+                activity1 == null && activity2 == null -> 0
+                activity1 == null -> 1
+                else -> -1
             }
+        }
+
+        private fun resolve(
+            id: String,
+            byId: Map<String, MApiTransaction>,
+            fallback: List<MApiTransaction>
+        ): MApiTransaction? {
+            return byId[id] ?: fallback.firstOrNull { it.id == id }
         }
     }
 }

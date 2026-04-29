@@ -575,7 +575,16 @@ class LedgerConnectVC(
         if (!bluetoothAdapter.isEnabled) {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             enableBtIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            window!!.startActivity(enableBtIntent)
+            try {
+                window?.startActivity(enableBtIntent)
+            } catch (_: SecurityException) {
+                onUpdate(
+                    LedgerManager.ConnectionState.Error(
+                        step = LedgerManager.ConnectionState.Error.Step.CONNECT,
+                        shortMessage = null
+                    )
+                )
+            }
         } else {
             startBleConnection()
         }

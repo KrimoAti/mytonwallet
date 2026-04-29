@@ -17,11 +17,7 @@ interface IApiToken {
     val keywords: List<String>?
 
     val mBlockchain
-        get() = try {
-            MBlockchain.valueOf(chain!!)
-        } catch (t: Throwable) {
-            null
-        }
+        get() = chain?.let { MBlockchain.valueOfOrNull(it) }
 
     val nativeToken: MToken?
         get() {

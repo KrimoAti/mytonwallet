@@ -117,6 +117,8 @@ class EarnHeaderCell: UITableViewCell {
     
     private func setupViews() {
         backgroundColor = .air.sheetBackground
+        selectionStyle = .none
+        
         contentView.addSubview(stackView)
         NSLayoutConstraint.activate([
             stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),

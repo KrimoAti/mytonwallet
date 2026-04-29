@@ -217,7 +217,10 @@ class TonConnectRequestSendViewModel private constructor(
 
     var isConfirmed = false
     fun notifyDone(success: Boolean, err: MBridgeError?) {
-        isConfirmed = true
+        if (isConfirmed)
+            return
+        if (success)
+            isConfirmed = true
         _eventsFlow.tryEmit(Event.Complete(success, err))
     }
 

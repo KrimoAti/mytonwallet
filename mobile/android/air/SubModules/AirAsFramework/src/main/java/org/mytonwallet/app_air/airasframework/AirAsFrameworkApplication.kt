@@ -50,7 +50,6 @@ class AirAsFrameworkApplication {
             val start = System.currentTimeMillis()
 
             var t = System.currentTimeMillis()
-            ApplicationContextHolder.update(applicationContext)
             Logger.i(
                 Logger.LogTag.AIR_APPLICATION,
                 "ApplicationContextHolder.update: ${System.currentTimeMillis() - t}ms"

@@ -192,8 +192,14 @@ enum class MBlockchain(
         fun isEvmChain(chain: String): Boolean =
             evmChainValues.contains(chain)
 
-        fun valueOfOrNull(name: String): MBlockchain? =
-            entries.firstOrNull { it.name == name }
+        fun valueOfOrNull(name: String): MBlockchain? {
+            val normalized = when (name) {
+                "binance-smart-chain", "binance_smart_chain" -> "bnb"
+                "hyperevm" -> "hyperliquid"
+                else -> name
+            }
+            return entries.firstOrNull { it.name == normalized }
+        }
 
         val POPULAR_TOKEN_ORDER = listOf(
             "TON", "USD₮", "USDT", "BTC", "ETH", "jUSDT", "jWBTC"

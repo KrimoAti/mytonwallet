@@ -65,7 +65,7 @@ public class EarnRootVC: WViewController, WSegmentedController.Delegate, Sendabl
         setupViews()
     }
     
-    func setupViews() {
+    private func setupViews() {
         view.backgroundColor = .air.sheetBackground
       
         tonVC = EarnVC(earnVM: EarnVM(config: .ton, accountContext: _account))
@@ -82,7 +82,7 @@ public class EarnRootVC: WViewController, WSegmentedController.Delegate, Sendabl
             barHeight: 0,
             goUnderNavBar: true,
             animationSpeed: .slow,
-            capsuleFillColor: .airBundle("DarkCapsuleColor") ,
+            capsuleFillColor: .air.darkCapsule,
             style: .header,
             delegate: self
         )
@@ -121,7 +121,7 @@ public class EarnRootVC: WViewController, WSegmentedController.Delegate, Sendabl
         WalletCoreData.add(eventObserver: self)
     }
 
-    func updateWithStakingState() {
+    private func updateWithStakingState() {
         let items = self.segmentedControlItems
         segmentedController.scrollView.isScrollEnabled = items.count > 1
         segmentedController.replace(items: items)

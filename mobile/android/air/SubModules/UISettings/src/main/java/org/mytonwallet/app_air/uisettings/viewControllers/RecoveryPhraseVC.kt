@@ -70,13 +70,7 @@ open class RecoveryPhraseVC(
     private var isShowingPrivateKey =
         wordsCount == 1 && PrivateKeyHelper.isValidPrivateKeyHex(words.first())
 
-    val animationView = WAnimationView(context).apply {
-        play(
-            R.raw.animation_bill, true,
-            onStart = {
-                scrollView.fadeIn()
-            })
-    }
+    val animationView = WAnimationView(context)
 
     private val subtitleLabel = WLabel(context).apply {
         setStyle(17f, WFont.Regular)
@@ -257,6 +251,12 @@ open class RecoveryPhraseVC(
             }
             setTopBlur(visible = y > 0, animated = true)
         }
+
+        animationView.play(
+            R.raw.animation_bill, true,
+            onStart = {
+                scrollView.fadeIn()
+            })
 
         updateTheme()
     }

@@ -1107,6 +1107,15 @@ Show All Wallets: Alle Wallets anzeigen
 Ask a Question: Eine Frage stellen
 Ask anything: Frag, was du möchtest
 Agent: Agent
+Learn more: Mehr erfahren
+Data shared with Agent: Mit Agent geteilte Daten
+$agent_consent_subtitle: Fragen Sie Agent nach Wallet-Hilfe, Token-Informationen und unterstützten Aktionen.
+$agent_consent_feature_answers: Erhalten Sie Antworten zu %app_name%, Token und Wallet-Aktivitäten.
+$agent_consent_feature_actions: Bereiten Sie unterstützte Aktionen wie Senden, Empfangen, Tauschen und Kaufen von Krypto vor.
+$agent_consent_feature_context: Verwenden Sie Wallet-Kontext, damit Antworten relevante Assets und Adressen berücksichtigen können.
+$agent_consent_disclosure_text: Indem Sie fortfahren, erlauben Sie %app_name%, Ihre Agent-Nachrichten und den Wallet-Kontext an %app_name% Agent (agent.mytonwallet.org) sowie an Drittanbieter von KI-Diensten zu senden, die Anfragen für uns verarbeiten. Der Wallet-Kontext kann öffentliche Adressen, Guthaben, Tokenliste, gespeicherte Adressen, Sprache und Basiswährung enthalten. Geben Sie keine Wiederherstellungsphrasen, privaten Schlüssel, Passwörter oder andere Geheimnisse ein.
+$agent_consent_debug_reset_button: Agent-Zustimmung zurücksetzen
+$agent_consent_debug_reset_footer: Zeigt den Agent-Zustimmungsbildschirm beim Öffnen des Agent-Tabs erneut an.
 Clear Chat: Chat löschen
 Unsupported link: Dieser Link wird nicht unterstützt
 MyTonWallet Features: MyTonWallet-Funktionen

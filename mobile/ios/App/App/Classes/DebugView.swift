@@ -101,6 +101,15 @@ struct DebugView: View {
                     }
 
                     Section {
+                        Button(lang("$agent_consent_debug_reset_button")) {
+                            log.info("Reset Agent consent state")
+                            AirDebugActions.resetAgentConsentState()
+                        }
+                    } footer: {
+                        Text(lang("$agent_consent_debug_reset_footer"))
+                    }
+
+                    Section {
                         Picker("Is Limited Override", selection: $isLimitedOverride) {
                             Text("Disabled")
                                 .tag(Optional<Bool>.none)

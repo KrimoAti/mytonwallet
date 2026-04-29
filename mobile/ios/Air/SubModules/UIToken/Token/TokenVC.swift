@@ -37,6 +37,7 @@ public class TokenVC: ActivityListViewController, Sendable, WSensitiveDataProtoc
         tokenVM = TokenVM(accountId: accountId,
                                            selectedToken: token,
                                            tokenVMDelegate: self)
+        WalletCoreData.add(eventObserver: self)
         tokenVM.refreshTransactions()
     }
     
@@ -108,7 +109,7 @@ public class TokenVC: ActivityListViewController, Sendable, WSensitiveDataProtoc
 
     private func setupViews() {
         navigationItem.titleView = navigationTitleView
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: makeMenu())
+        updateNavigationMenu()
         if !IOS_26_MODE_ENABLED {
             configureNavigationItemWithTransparentBackground()
         }
@@ -244,6 +245,12 @@ public class TokenVC: ActivityListViewController, Sendable, WSensitiveDataProtoc
         navigationTitleView.alpha = min(1, max(0, (30 - scrollOffset) / 14 + 1))
     }
 
+    private func updateNavigationMenu() {
+        navigationItem.rightBarButtonItem = ConfigStore.shared.shouldRestrictSwapsAndOnRamp
+            ? nil
+            : UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: makeMenu())
+    }
+
     private func makeMenu() -> UIMenu {
 
         let openUrl: (URL) -> () = { url in
@@ -264,6 +271,17 @@ public class TokenVC: ActivityListViewController, Sendable, WSensitiveDataProtoc
         let websiteSection = UIMenu(options: .displayInline, children: websiteActions)
 
         return UIMenu(children: [explorerSection, websiteSection])
+    }
+}
+
+extension TokenVC: WalletCoreData.EventsObserver {
+    public func walletCore(event: WalletCoreData.Event) {
+        switch event {
+        case .configChanged:
+            updateNavigationMenu()
+        default:
+            break
+        }
     }
 }
 

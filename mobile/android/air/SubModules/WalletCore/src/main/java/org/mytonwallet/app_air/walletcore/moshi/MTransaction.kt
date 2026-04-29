@@ -356,9 +356,9 @@ sealed class MApiTransaction : WEquatable<MApiTransaction> {
             return null
         val token = TokenStore.getToken(getTxSlug())
         val chain =
-            if (token?.chain != null) MBlockchain.valueOf(
+            if (token?.chain != null) MBlockchain.valueOfOrNull(
                 token.chain
-            ) else if (this is Swap) MBlockchain.ton else return null
+            ) ?: return null else if (this is Swap) MBlockchain.ton else return null
 
         return chain.idToTxHash(getTxIdentifier())
     }
@@ -581,9 +581,9 @@ sealed class MApiTransaction : WEquatable<MApiTransaction> {
             return null
         val token = TokenStore.getToken(getTxSlug())
         val chain =
-            if (token?.chain != null) MBlockchain.valueOf(
+            if (token?.chain != null) MBlockchain.valueOfOrNull(
                 token.chain
-            ) else if (this is Swap) MBlockchain.ton else return null
+            ) ?: return null else if (this is Swap) MBlockchain.ton else return null
 
         val urlBuilder = Uri.Builder()
             .appendPath("tx")

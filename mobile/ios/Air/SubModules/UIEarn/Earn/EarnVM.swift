@@ -236,7 +236,7 @@ public final class EarnVM: WalletCoreData.EventsObserver {
         return true
     }
     
-    func loadStakingHistory(page: Int) {
+    private func loadStakingHistory(page: Int) {
         let accountId = currentAccountId
         guard isLoadingStakingHistoryPage == nil else {
             return
@@ -307,7 +307,7 @@ public final class EarnVM: WalletCoreData.EventsObserver {
     
     // MARK: - Unstaked activities
     
-    func fetchUnstakeTokenActivities(toTimestamp: Int64? = nil) {
+    private func fetchUnstakeTokenActivities(toTimestamp: Int64? = nil) {
         if isLoadingUnstakeActivities {
             return
         }
@@ -351,7 +351,7 @@ public final class EarnVM: WalletCoreData.EventsObserver {
     
     // MARK: - STAKED token activities
     
-    func fetchTokenActivities(toTimestamp: Int64? = nil) {
+    private func fetchTokenActivities(toTimestamp: Int64? = nil) {
         if isLoadingActivities {
             return
         }
@@ -394,7 +394,7 @@ public final class EarnVM: WalletCoreData.EventsObserver {
     }
     
     // MARK: - MERGERS to merge activity items and staking history items
-    @concurrent func merger(newTransactions: [ApiActivity]) async {
+    @concurrent private func merger(newTransactions: [ApiActivity]) async {
         let oldHistoryItems = await self.historyItems ?? []
         var historyItems = oldHistoryItems
         for transaction in newTransactions {
@@ -420,7 +420,7 @@ public final class EarnVM: WalletCoreData.EventsObserver {
         }
     }
     
-    @concurrent func merger(newHistoryItems: [MStakingHistoryItem]) async {
+    @concurrent private func merger(newHistoryItems: [MStakingHistoryItem]) async {
         let oldHistoryItems = await self.historyItems ?? []
         var historyItems = oldHistoryItems
         for item in newHistoryItems {

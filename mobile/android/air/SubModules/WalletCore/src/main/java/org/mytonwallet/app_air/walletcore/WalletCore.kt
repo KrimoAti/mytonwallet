@@ -441,7 +441,9 @@ object WalletCore {
         }
 
         val connectivityManager =
-            bridge?.context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            (bridge?.context ?: ApplicationContextHolder.applicationContext)
+                .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             connectivityManager.registerDefaultNetworkCallback(networkCallback)
@@ -474,16 +476,13 @@ object WalletCore {
 
     fun isConnected(): Boolean {
         val connectivityManager =
-            bridge?.context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            (bridge?.context ?: ApplicationContextHolder.applicationContext)
+                .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+                ?: return false
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val networkCapabilities =
-                connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
-            return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } else {
-            val activeNetworkInfo = connectivityManager.activeNetworkInfo
-            return activeNetworkInfo?.isConnected == true
-        }
+        val networkCapabilities =
+            connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+        return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }
 
     fun getAllAccounts(): List<MAccount> {

@@ -18,6 +18,7 @@ on:
         default: both
         options:
           - both
+          - none
           - mytonwallet
           - gram
       ios_variant:
@@ -27,6 +28,7 @@ on:
         default: both
         options:
           - both
+          - none
           - mytonwallet
           - gram
   push:
@@ -71,10 +73,14 @@ jobs:
         id: filter
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "android-only=false" >> "$GITHUB_OUTPUT"
-            echo "ios-only=false" >> "$GITHUB_OUTPUT"
-            echo "electron-changed=true" >> "$GITHUB_OUTPUT"
+            ANDROID_SELECTED=true
+            IOS_SELECTED=true
+
             case "${{ inputs.android_variant }}" in
+              none)
+                ANDROID_SELECTED=false
+                echo 'android-variants=[]' >> "$GITHUB_OUTPUT"
+                ;;
               mytonwallet)
                 echo 'android-variants=["mytonwallet"]' >> "$GITHUB_OUTPUT"
                 ;;
@@ -86,6 +92,10 @@ jobs:
                 ;;
             esac
             case "${{ inputs.ios_variant }}" in
+              none)
+                IOS_SELECTED=false
+                echo 'ios-variants=[]' >> "$GITHUB_OUTPUT"
+                ;;
               mytonwallet)
                 echo 'ios-variants=["mytonwallet"]' >> "$GITHUB_OUTPUT"
                 ;;
@@ -96,7 +106,22 @@ jobs:
                 echo 'ios-variants=["mytonwallet","gram"]' >> "$GITHUB_OUTPUT"
                 ;;
             esac
-            echo "Manual dispatch — building all platforms"
+
+            if [ "$ANDROID_SELECTED" = "true" ] && [ "$IOS_SELECTED" = "false" ]; then
+              echo "android-only=true" >> "$GITHUB_OUTPUT"
+              echo "ios-only=false" >> "$GITHUB_OUTPUT"
+              echo "electron-changed=false" >> "$GITHUB_OUTPUT"
+            elif [ "$ANDROID_SELECTED" = "false" ] && [ "$IOS_SELECTED" = "true" ]; then
+              echo "android-only=false" >> "$GITHUB_OUTPUT"
+              echo "ios-only=true" >> "$GITHUB_OUTPUT"
+              echo "electron-changed=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "android-only=false" >> "$GITHUB_OUTPUT"
+              echo "ios-only=false" >> "$GITHUB_OUTPUT"
+              echo "electron-changed=true" >> "$GITHUB_OUTPUT"
+            fi
+
+            echo "Manual dispatch — using selected variants"
             exit 0
           fi
 
@@ -507,7 +532,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 30
-    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && needs.detect-changes.outputs.ios-only != 'true'
+    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && needs.detect-changes.outputs.ios-only != 'true' && needs.detect-changes.outputs.android-variants != '[]'
     strategy:
       fail-fast: false
       matrix:
@@ -634,7 +659,7 @@ jobs:
     runs-on: macos-26
     environment: production
     timeout-minutes: 30
-    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && needs.detect-changes.outputs.android-only != 'true'
+    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/master') && needs.detect-changes.outputs.android-only != 'true' && needs.detect-changes.outputs.ios-variants != '[]'
     strategy:
       fail-fast: false
       matrix:
@@ -669,6 +694,9 @@ jobs:
               echo "IOS_WIDGET_SCHEME=GramWalletWidgetExtension" >> "$GITHUB_ENV"
               echo "IOS_PLIST_PATH=../../App/App/GramWallet-Info.plist" >> "$GITHUB_ENV"
               echo "IOS_TESTFLIGHT_GROUP=${IOS_GRAM_TESTFLIGHT_GROUP:-Gram Wallet external group}" >> "$GITHUB_ENV"
+              # Gram is not published on the App Store yet. Keep reusing 4.8.6 so
+              # public TestFlight uploads avoid a new-version beta review until launch.
+              echo "IOS_VERSION_OVERRIDE=4.8.6" >> "$GITHUB_ENV"
               ;;
             *)
               echo "::error::Unknown APP_VARIANT: $APP_VARIANT"

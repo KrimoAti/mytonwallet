@@ -42,6 +42,11 @@ private final class LazyRootNavigationController: WNavigationController {
         viewControllers = [makeRootViewController()]
     }
 
+    func resetRootViewController() {
+        didInstallRootViewController = true
+        viewControllers = [makeRootViewController()]
+    }
+
     func containsRootViewController<T: UIViewController>(of type: T.Type) -> Bool {
         if let rootViewController = viewControllers.first {
             return rootViewController is T
@@ -94,7 +99,7 @@ public class HomeTabBarController: UITabBarController {
             ExploreTabVC()
         }
         let agentViewController = LazyRootNavigationController(rootViewControllerType: AgentVC.self) {
-            AgentVC()
+            AgentEntryPoint.makeRootViewController()
         }
         
         homeNav.tabBarItem.image = UIImage(named: "tab_home", in: AirBundle, compatibleWith: nil)
@@ -176,6 +181,16 @@ public class HomeTabBarController: UITabBarController {
 
     public func switchToAgent() {
         selectedIndex = tabIndex(for: .agent)
+    }
+
+    public func debugOnly_resetAgentRoot() {
+        let agentIndex = tabIndex(for: .agent)
+        guard let viewControllers,
+              viewControllers.indices.contains(agentIndex),
+              let agentNavigationController = viewControllers[agentIndex] as? LazyRootNavigationController else {
+            return
+        }
+        agentNavigationController.resetRootViewController()
     }
     
     public func switchToExplore() {

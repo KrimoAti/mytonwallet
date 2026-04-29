@@ -19,14 +19,14 @@ public class EarnVC: WViewController, WSegmentedControllerContent, WSensitiveDat
     private var accountContext: AccountContext { earnVM.accountContext }
     private var stakingData: MStakingData? { accountContext.stakingData }
     
-    var config: StakingConfig { earnVM.config }
-    var tokenSlug: String { config.baseTokenSlug }
-    var stakedTokenSlug: String { config.stakedTokenSlug }
-    var token: ApiToken { config.baseToken }
-    var stakedToken: ApiToken { config.stakedToken }
-    var stakingState: ApiStakingState? { config.stakingState(stakingData: stakingData) }
+    private var config: StakingConfig { earnVM.config }
+    private var tokenSlug: String { config.baseTokenSlug }
+    private var stakedTokenSlug: String { config.stakedTokenSlug }
+    private var token: ApiToken { config.baseToken }
+    private var stakedToken: ApiToken { config.stakedToken }
+    private var stakingState: ApiStakingState? { config.stakingState(stakingData: stakingData) }
 
-    var areProfitsCollapsed = true
+    private var areProfitsCollapsed = true
     
     public init(earnVM: EarnVM) {
         self.earnVM = earnVM
@@ -63,11 +63,11 @@ public class EarnVC: WViewController, WSegmentedControllerContent, WSensitiveDat
     private lazy var claimRewardsViewModel = ClaimRewardsModel(accountContext: accountContext)
     private var claimRewardsView: HostingView!
     
-    enum Section: Hashable {
+    private enum Section: Hashable {
         case header
         case history
     }
-    enum Row: Hashable, Sendable {
+    private enum Row: Hashable, Sendable {
         case header
         case historyHeader
         case historyItem(MStakingHistoryItem)
@@ -306,7 +306,7 @@ public class EarnVC: WViewController, WSegmentedControllerContent, WSensitiveDat
 
 extension EarnVC: UITableViewDelegate {
     
-    func makeSnapshot() -> NSDiffableDataSourceSnapshot<Section, Row> {
+    private func makeSnapshot() -> NSDiffableDataSourceSnapshot<Section, Row> {
         
         let historyItems = earnVM.historyItems ?? []
         
@@ -366,7 +366,7 @@ extension EarnVC: UITableViewDelegate {
         return snapshot
     }
     
-    func applySnapshot(animated: Bool, reloadHeader: Bool = true) {
+    private func applySnapshot(animated: Bool, reloadHeader: Bool = true) {
         var snapshot = makeSnapshot()
         if reloadHeader {
             snapshot.reconfigureItems([.header])
@@ -418,9 +418,9 @@ extension EarnVC: UITableViewDelegate {
     public func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         if let id = dataSource?.itemIdentifier(for: indexPath) {
             switch id {
-            case .historyItem(let hisoryItem), .stackedProfits(let hisoryItem, _, _):
+            case .historyItem(let historyItem), .stackedProfits(let historyItem, _, _):
                 let areProfitsCollapsed = self.areProfitsCollapsed
-                if hisoryItem.type == .profit {
+                if historyItem.type == .profit {
                     return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
                         let action = UIAction(title: areProfitsCollapsed ? lang("Expand") : lang("Collapse")) { [weak self] v in
                             self?.areProfitsCollapsed.toggle()

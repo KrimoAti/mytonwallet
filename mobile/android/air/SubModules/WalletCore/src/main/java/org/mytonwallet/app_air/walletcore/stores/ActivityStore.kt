@@ -389,11 +389,15 @@ object ActivityStore : IStore {
                 return@execute
             }
 
-            // Merge IDs with existing list
+            // Merge IDs with existing list. `filteredActivities` is supplied as a fallback
+            // because it may include activities that have not yet been added to
+            // `cachedTransactions` (e.g. via the receivedLocalTransactions path), and the
+            // comparator must resolve every id to stay transitive.
             val mergedIds = ActivityHelpers.mergeSortedActivityIds(
                 filteredActivities.map { it.id },
                 existingIds,
-                _accountStates[accountId]?.cachedTransactions ?: emptyMap()
+                _accountStates[accountId]?.cachedTransactions ?: emptyMap(),
+                filteredActivities
             )
 
             // Apply cache limit

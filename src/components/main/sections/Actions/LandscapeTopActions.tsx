@@ -119,7 +119,7 @@ function LandscapeTopActions({
 
   const depositButton = (
     <ActionButton
-      label={lang('Deposit')}
+      label={lang('Fund')}
       tgsUrl={stickerPaths.iconAdd}
       previewUrl={stickerPaths.preview.iconAdd}
       accentColor={accentColor}

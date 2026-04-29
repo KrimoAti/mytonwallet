@@ -32,6 +32,11 @@ private final class LazySplitRootNavigationController: WNavigationController {
         didInstallRootViewController = true
         viewControllers = [makeRootViewController()]
     }
+
+    func resetRootViewController() {
+        didInstallRootViewController = true
+        viewControllers = [makeRootViewController()]
+    }
 }
 
 @MainActor
@@ -59,7 +64,7 @@ final class SplitRootViewController: UISplitViewController, VisibleContentProvid
         
         self.homeNavigationController = WNavigationController(rootViewController: SplitHomeVC())
         self.agentNavigationController = LazySplitRootNavigationController {
-            AgentVC()
+            AgentEntryPoint.makeRootViewController()
         }
         self.exploreNavigationController = LazySplitRootNavigationController {
             ExploreTabVC()
@@ -138,6 +143,13 @@ final class SplitRootViewController: UISplitViewController, VisibleContentProvid
 
     func showAgent() {
         select(tab: .agent)
+    }
+
+    func debugOnly_resetAgentRoot() {
+        guard let agentNavigationController = agentNavigationController as? LazySplitRootNavigationController else {
+            return
+        }
+        agentNavigationController.resetRootViewController()
     }
     
     func showExplore() {
