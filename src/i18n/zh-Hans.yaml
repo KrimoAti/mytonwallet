@@ -1165,3 +1165,6 @@ Top %amount%: 前 %amount% 名
 No subwallets yet.: 暂无子钱包。
 $subwallets_found: "已找到：%1$d"
 Send, receive, and trade tokens and collectibles.: 发送、接收和交易代币与收藏品。
+$overview_cell_size_small: 小
+$overview_cell_size_medium: 中
+$overview_cell_size_big: 大

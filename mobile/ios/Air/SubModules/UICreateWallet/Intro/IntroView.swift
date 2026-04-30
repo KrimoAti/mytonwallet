@@ -41,21 +41,45 @@ struct IntroView: View {
         .padding(.bottom, 32)
     }
     
+    @ViewBuilder
     var iconAndEffect: some View {
-        Image.airBundle(IS_GRAM_WALLET ? "IntroLogoGramWallet" : "IntroLogo")
-            .highlightScale(isTouching, scale: 0.9, isEnabled: true)
-            .touchGesture($isTouching)
-            .frame(width: 124, height: 124)
-            .background {
-                ParticleBackground(burstTrigger: $burstTrigger)
-            }
-            .onChange(of: isTouching) { isTouching in
-                if isTouching {
+        if IS_GRAM_WALLET {
+            GramIntroHeaderView()
+                .offset(y: -32)
+        } else {
+            Image.airBundle("IntroLogo")
+                .highlightScale(isTouching, scale: 0.9, isEnabled: true)
+                .touchGesture($isTouching)
+                .frame(width: 124, height: 124)
+                .background {
+                    ParticleBackground(burstTrigger: $burstTrigger)
+                }
+                .onChange(of: isTouching) { isTouching in
+                    if isTouching {
+                        burstTrigger += 1
+                    }
+                }
+                .backportSensoryFeedback(value: isTouching)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private struct GramIntroHeaderView: View {
+        @State private var burstTrigger = 0
+
+        var body: some View {
+            ZStack {
+                SparkleParticleBackground(burstTrigger: $burstTrigger)
+                    .frame(width: 350, height: 230)
+                    .allowsHitTesting(false)
+                WUISpeedingDiamond {
                     burstTrigger += 1
                 }
+                .frame(width: 130, height: 130)
             }
-            .backportSensoryFeedback(value: isTouching)
+            .frame(width: 130, height: 130)
             .accessibilityHidden(true)
+        }
     }
     
     var title: some View {

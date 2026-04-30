@@ -654,6 +654,19 @@ function migrateCache(cached: GlobalState, initialState: GlobalState) {
     }
     cached.stateVersion = 55;
   }
+  if (cached.stateVersion === 55) {
+    // `walletTokensLimit` (numeric Top-N preset) replaced by `overviewCellSize` enum.
+    if (cached.settings?.byAccountId) {
+      for (const accountSettings of Object.values(cached.settings.byAccountId)) {
+        const limit = (accountSettings as any).walletTokensLimit as number | undefined;
+        if (limit !== undefined && accountSettings.overviewCellSize === undefined) {
+          accountSettings.overviewCellSize = limit <= 7 ? 'small' : limit < 30 ? 'medium' : 'big';
+        }
+        delete (accountSettings as any).walletTokensLimit;
+      }
+    }
+    cached.stateVersion = 56;
+  }
   // When adding migration here, increase `STATE_VERSION`
 }
 

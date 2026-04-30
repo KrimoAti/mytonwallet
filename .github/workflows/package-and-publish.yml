@@ -129,7 +129,7 @@ jobs:
             echo "android-only=false" >> "$GITHUB_OUTPUT"
             echo "ios-only=false" >> "$GITHUB_OUTPUT"
             echo "electron-changed=true" >> "$GITHUB_OUTPUT"
-            echo 'android-variants=["mytonwallet","gram"]' >> "$GITHUB_OUTPUT"
+            echo 'android-variants=["mytonwallet"]' >> "$GITHUB_OUTPUT"
             echo 'ios-variants=["mytonwallet"]' >> "$GITHUB_OUTPUT"
             echo "Production release — building automatic platform variants"
             exit 0
@@ -156,7 +156,7 @@ jobs:
           echo "android-only=$ANDROID_ONLY" >> "$GITHUB_OUTPUT"
           echo "ios-only=$IOS_ONLY" >> "$GITHUB_OUTPUT"
           echo "electron-changed=$ELECTRON_CHANGED" >> "$GITHUB_OUTPUT"
-          echo 'android-variants=["mytonwallet","gram"]' >> "$GITHUB_OUTPUT"
+          echo 'android-variants=["mytonwallet"]' >> "$GITHUB_OUTPUT"
           echo 'ios-variants=["mytonwallet"]' >> "$GITHUB_OUTPUT"
           echo "Changed files:"
           echo "$CHANGED"

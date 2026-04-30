@@ -207,6 +207,10 @@ $footerPaddingBottom: 1rem;
   text-align: center;
 }
 
+:global(html.is-firefox) .accountsContainer {
+  height: calc(100% - var(--border-radius-default));
+}
+
 .contentSlide {
   scrollbar-gutter: stable;
 

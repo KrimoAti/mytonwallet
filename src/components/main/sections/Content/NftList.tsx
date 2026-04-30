@@ -3,7 +3,9 @@ import { setExtraStyles } from '../../../../lib/teact/teact-dom';
 
 import type { ApiNft } from '../../../../api/types';
 import type { AppTheme } from '../../../../global/types';
+import type { LoadMoreDirection } from '../../../../global/types';
 
+import { requestMeasure, requestMutation } from '../../../../lib/fasterdom/fasterdom';
 import { forceMeasure } from '../../../../lib/fasterdom/stricterdom';
 import buildClassName from '../../../../util/buildClassName';
 import { getDnsExpirationDate } from '../../../../util/dns';
@@ -11,6 +13,7 @@ import { REM } from '../../../../util/windowEnvironment';
 
 import { useDeviceScreen } from '../../../../hooks/useDeviceScreen';
 import useInfiniteScroll from '../../../../hooks/useInfiniteScroll';
+import useLastCallback from '../../../../hooks/useLastCallback';
 import usePrevious from '../../../../hooks/usePrevious';
 import useUniqueId from '../../../../hooks/useUniqueId';
 import useWindowSize from '../../../../hooks/useWindowSize';
@@ -18,6 +21,7 @@ import useWindowSize from '../../../../hooks/useWindowSize';
 import InfiniteScroll from '../../../ui/InfiniteScroll';
 import Spinner from '../../../ui/Spinner';
 import Nft from './Nft';
+import { OVERVIEW_CELL_BODY_CLASS } from './OverviewCell';
 
 import styles from './Nft.module.scss';
 
@@ -26,6 +30,7 @@ interface OwnProps {
   isActive?: boolean;
   isLoading?: boolean;
   isWidget?: boolean;
+  isWidgetStretched?: boolean;
   appTheme: AppTheme;
   dnsExpiration?: Record<string, number>;
   isViewAccount?: boolean;
@@ -52,6 +57,7 @@ function NftList({
   isActive,
   isLoading,
   isWidget,
+  isWidgetStretched,
   appTheme,
   dnsExpiration,
   isViewAccount,
@@ -67,9 +73,9 @@ function NftList({
 
   const [viewportNftAddresses, getMore] = useInfiniteScroll({
     listIds: addresses,
-    isActive: isActive && !isWidget,
+    isActive,
     listSlice: LIST_SLICE,
-    withResetOnInactive: isPortrait,
+    withResetOnInactive: isPortrait || isWidget,
   });
 
   // Reset scroll position when tab becomes active after viewport was reset (portrait only)
@@ -96,48 +102,138 @@ function NftList({
     return addressToIndexMap.get(viewportNftAddresses[0]) ?? 0;
   }, [addressToIndexMap, viewportNftAddresses]);
 
-  const nftsPerRow = isLandscape
+  // Stretched widget cell spans the full content width — mirror the non-widget landscape grid
+  // so the layout matches the full-size NFTs view (4 cols on wide screens, otherwise 3)
+  const widgetColumns = isWidgetStretched
     ? (width >= LANDSCAPE_WIDE_BREAKPOINT_PX ? 4 : 3)
-    : 2;
-  const emptyCellsCount = viewportIndex % nftsPerRow;
+    : (addresses.length <= COMPACT_TWO_COLUMNS_MAX ? 2 : 3);
+  const nftsPerRow = isWidget
+    ? widgetColumns
+    : isLandscape
+      ? (width >= LANDSCAPE_WIDE_BREAKPOINT_PX ? 4 : 3)
+      : 2;
+
+  const scrollContainerSelector = isWidget
+    ? `.${OVERVIEW_CELL_BODY_CLASS}`
+    : (isLandscape ? '.nfts-container' : '.app-slide-content');
+
+  // Re-center the viewport slice around the current scroll position in a single hop instead
+  // of shifting by `LIST_SLICE` per cycle. Equivalent to default `getMore` on slow scroll
+  // (target row barely changes) and strictly better on rapid jumps.
+  const handleGetMore = useLastCallback((args: { direction: LoadMoreDirection }) => {
+    if (!getMore || !addresses.length) return;
+
+    const scrollContainer = containerRef.current?.closest<HTMLDivElement>(scrollContainerSelector);
+    if (!scrollContainer) {
+      getMore(args);
+      return;
+    }
+
+    const computedStyle = getComputedStyle(containerRef.current!);
+    const cellHeight = parseFloat(computedStyle.getPropertyValue('--cell-height')) || 0;
+    const rowGap = parseFloat(computedStyle.getPropertyValue('--row-gap-size')) || 0;
+    const rowStride = cellHeight + rowGap;
+    if (rowStride <= 0) {
+      getMore(args);
+      return;
+    }
+
+    const containerRect = containerRef.current!.getBoundingClientRect();
+    const scrollRect = scrollContainer.getBoundingClientRect();
+    const listTopOffset = (containerRect.top - scrollRect.top) + scrollContainer.scrollTop;
+    const visibleCenterPx = scrollContainer.scrollTop + scrollContainer.offsetHeight / 2 - listTopOffset;
+    const targetRow = Math.max(0, Math.floor(visibleCenterPx / rowStride));
+    const targetIndex = Math.max(0, Math.min(addresses.length - 1, targetRow * nftsPerRow));
+    getMore({ direction: args.direction, offsetId: addresses[targetIndex] });
+  });
 
   useLayoutEffect(() => {
-    if (isWidget) return;
+    const container = containerRef.current;
+    if (!container) return undefined;
 
-    forceMeasure(() => {
-      const container = containerRef.current;
-      if (!container || container.closest('.Transition_slide-inactive')) return;
+    const computeStyles = (el: HTMLElement) => {
+      const containerWidth = el.offsetWidth;
+      // Cell may be inside a hidden ancestor (e.g., a freshly added collection tab while the user
+      // is still viewing another collection) - `width=0` produces invalid styles. Skip until the
+      // `ResizeObserver` fires when the cell becomes visible.
+      if (containerWidth === 0) return undefined;
 
-      const containerWidth = container.offsetWidth;
       const nftWidth = Math.floor((containerWidth - INNER_PADDING - (nftsPerRow - 1) * COLUMNS_GAP_SIZE) / nftsPerRow);
       const rowHeight = nftWidth + TEXT_DATA_HEIGHT;
+      const totalRowCount = isWidget ? Math.ceil(addresses.length / nftsPerRow) : 0;
       const safeViewportIndex = Math.max(0, viewportIndex);
       const visibleCount = Math.max(0, viewportNftAddresses?.length ?? 0);
-      const rowCount = Math.ceil((safeViewportIndex + visibleCount) / nftsPerRow);
+      const rowCount = isWidget
+        ? totalRowCount
+        : Math.ceil((safeViewportIndex + visibleCount) / nftsPerRow);
       const gapCount = Math.max(0, rowCount - 1);
 
-      if (!containerRef.current) return;
+      const loadingExtra = !isWidget && isLoading && addresses.length > 0
+        ? LOADING_ROW_HEIGHT + ROWS_GAP_SIZE
+        : 0;
 
-      const loadingExtra = isLoading && addresses.length > 0 ? LOADING_ROW_HEIGHT + ROWS_GAP_SIZE : 0;
-
-      setExtraStyles(containerRef.current, {
+      return {
         height: `${rowCount * rowHeight + gapCount * ROWS_GAP_SIZE + loadingExtra}px`,
         '--row-gap-size': `${ROWS_GAP_SIZE}px`,
         '--cell-width': `${nftWidth}px`,
         '--cell-height': `${rowHeight}px`,
+      };
+    };
+
+    // Initial pass: stay synchronous so `InfiniteScroll`'s preload effect (which runs immediately
+    // after) sees the final `scrollHeight` and doesn't fire a spurious `loadMoreBackwards` -
+    // that would shift viewport off index 0 and leave an empty placeholder for the first NFT
+    forceMeasure(() => {
+      const el = containerRef.current;
+      if (!el) return;
+
+      const styles = computeStyles(el);
+      if (styles) setExtraStyles(el, styles);
+    });
+
+    // Subsequent passes via `ResizeObserver` run outside fasterdom phases - split measure/mutate
+    const observer = new ResizeObserver(() => {
+      requestMeasure(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        const styles = computeStyles(el);
+        if (!styles) return;
+
+        requestMutation(() => {
+          if (!containerRef.current) return;
+          setExtraStyles(containerRef.current, styles);
+        });
       });
     });
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
   }, [
     addresses.length, isActive, isWidget, isLoading, nftsPerRow,
     viewportIndex, viewportNftAddresses?.length, width,
   ]);
 
-  if (isWidget) {
-    const columns = addresses.length <= COMPACT_TWO_COLUMNS_MAX ? 2 : 3;
+  return (
+    <InfiniteScroll
+      ref={containerRef}
+      withAbsolutePositioning
+      className={buildClassName(styles.list, isWidget && styles.listWidget, `nft-list-${uniqueId}`)}
+      scrollContainerClosest={scrollContainerSelector}
+      items={viewportNftAddresses}
+      itemSelector={`.nft-list-${uniqueId} .${styles.item}`}
+      preloadBackwards={LIST_SLICE}
+      sensitiveArea={SENSITIVE_AREA}
+      cacheBuster={width}
+      onLoadMore={handleGetMore}
+    >
+      {viewportNftAddresses?.map((address, index) => {
+        const overallIndex = viewportIndex + index;
+        const row = Math.floor(overallIndex / nftsPerRow);
+        const col = overallIndex % nftsPerRow;
 
-    return (
-      <div className={styles.listCompact} style={`--columns: ${columns}`}>
-        {addresses.map((address) => (
+        return (
           <Nft
             key={address}
             nft={nftsByAddresses[address]}
@@ -146,50 +242,12 @@ function NftList({
             isViewAccount={isViewAccount}
             withChainIcon={isMultichainAccount}
             selectedNfts={selectedNfts}
-            isWidget
+            isWidget={isWidget}
+            style={`--row: ${row}; --col: ${col};`}
           />
-        ))}
-      </div>
-    );
-  }
-
-  // Empty cells for grid alignment via CSS `nth-child()`
-  const emptyCells = Array.from({ length: emptyCellsCount });
-
-  return (
-    <InfiniteScroll
-      ref={containerRef}
-      withAbsolutePositioning
-      className={buildClassName(styles.list, `nft-list-${uniqueId}`)}
-      scrollContainerClosest={isLandscape ? '.nfts-container' : '.app-slide-content'}
-      items={viewportNftAddresses}
-      // For correct scrolling, the first element in the row must be selected via this prop
-      itemSelector={`.nft-list-${uniqueId} .${styles.item}:nth-child(${nftsPerRow}n + 1)`}
-      preloadBackwards={LIST_SLICE}
-      sensitiveArea={SENSITIVE_AREA}
-      cacheBuster={width}
-      onLoadMore={getMore}
-    >
-      {emptyCells.map((_, index) => (
-        <div
-          key={`empty-${index}`}
-          className={styles.item}
-          style={`--row: ${Math.floor((viewportIndex - emptyCellsCount + index) / nftsPerRow)};`}
-        />
-      ))}
-      {viewportNftAddresses?.map((address, index) => (
-        <Nft
-          key={address}
-          nft={nftsByAddresses[address]}
-          appTheme={appTheme}
-          tonDnsExpiration={getDnsExpirationDate(nftsByAddresses[address], dnsExpiration)}
-          isViewAccount={isViewAccount}
-          withChainIcon={isMultichainAccount}
-          selectedNfts={selectedNfts}
-          style={`--row: ${Math.floor((viewportIndex + index) / nftsPerRow)};`}
-        />
-      ))}
-      {isLoading && addresses.length > 0 && (
+        );
+      })}
+      {!isWidget && isLoading && addresses.length > 0 && (
         <div
           key="nft-loading"
           className={styles.loadingWrapper}

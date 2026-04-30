@@ -260,9 +260,9 @@ function Nft({
       ref={ref}
       style={style}
       className={fullClassName}
-      onMouseEnter={isSelectionEnabledForCurrentNft ? markHover : undefined}
-      onMouseLeave={isSelectionEnabledForCurrentNft ? unmarkHover : undefined}
-      onClick={!(isSelectionEnabledForCurrentNft) || !nft.isOnSale ? handleClick : undefined}
+      onMouseEnter={markHover}
+      onMouseLeave={unmarkHover}
+      onClick={!isSelectionEnabledForCurrentNft || !nft.isOnSale ? handleClick : undefined}
       onMouseDown={handleBeforeContextMenu}
       onContextMenu={handleContextMenu}
     >
@@ -291,7 +291,7 @@ function Nft({
           {lang('Different blockchain. Cannot be selected')}
         </div>
       )}
-      {!isWidget && renderNftInfo()}
+      {renderNftInfo()}
     </div>
   );
 }

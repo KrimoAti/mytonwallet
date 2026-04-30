@@ -2,7 +2,7 @@ import type { TeactNode } from '../../../../lib/teact/teact';
 import { memo, useRef, useState } from '../../../../lib/teact/teact';
 import React from '../../../../lib/teact/teact';
 
-import type { IAnchorPosition } from '../../../../global/types';
+import type { IAnchorPosition, OverviewCellSize } from '../../../../global/types';
 import type { Layout } from '../../../../hooks/useMenuPosition';
 import type { DropdownItem } from '../../../ui/Dropdown';
 
@@ -18,6 +18,8 @@ import DropdownMenu from '../../../ui/DropdownMenu';
 
 import styles from './OverviewCell.module.scss';
 
+export const OVERVIEW_CELL_BODY_CLASS = 'overview-cell-body';
+
 interface OwnProps<T, MenuValue extends string = string> {
   caption: string;
   showAllIcon: string;
@@ -25,12 +27,18 @@ interface OwnProps<T, MenuValue extends string = string> {
   showAllAmount?: number;
   clickArg?: T;
   menuItems?: DropdownItem<MenuValue>[];
-  selectedMenuValue?: MenuValue;
+  size?: OverviewCellSize;
   className?: string;
   children: TeactNode;
   onShowAllClick?: (arg: T) => void;
   onMenuItemClick?: (value: MenuValue, arg: T) => void;
 }
+
+const SIZE_CLASS: Record<OverviewCellSize, string> = {
+  small: styles.sizeSmall,
+  medium: styles.sizeMedium,
+  big: styles.sizeBig,
+};
 
 function OverviewCell<T = undefined, MenuValue extends string = string>({
   caption,
@@ -39,7 +47,7 @@ function OverviewCell<T = undefined, MenuValue extends string = string>({
   showAllAmount,
   clickArg,
   menuItems,
-  selectedMenuValue,
+  size = 'small',
   className,
   children,
   onShowAllClick,
@@ -92,24 +100,17 @@ function OverviewCell<T = undefined, MenuValue extends string = string>({
     doNotCoverTrigger: true,
   }));
 
+  const titleAndBadge = (
+    <span className={styles.captionTitleRow}>
+      <span className={styles.captionTitle}>{caption}</span>
+      {Boolean(showAllAmount) && (
+        <span className={styles.captionBadge}>{formatNumber(showAllAmount)}</span>
+      )}
+    </span>
+  );
+
   return (
-    <div className={buildClassName(styles.wrapper, className)}>
-      <div className={styles.card}>
-        <div className={styles.body}>
-          {children}
-        </div>
-        {onShowAllClick && (
-          <Button isSimple className={styles.showAll} onClick={handleShowAllClick}>
-            <i className={buildClassName(styles.showAllIcon, showAllIcon)} aria-hidden />
-            <span className={styles.showAllLabel}>{showAllLabel}</span>
-            {Boolean(showAllAmount) && (
-              <strong className={styles.showAllAmount}>
-                {formatNumber(showAllAmount)}
-              </strong>
-            )}
-          </Button>
-        )}
-      </div>
+    <div className={buildClassName(styles.wrapper, SIZE_CLASS[size], className)}>
       {hasRenderedMenu ? (
         <span
           ref={triggerRef}
@@ -119,12 +120,30 @@ function OverviewCell<T = undefined, MenuValue extends string = string>({
           onClick={handleOpenMenu}
           onKeyDown={handleTriggerKeyDown}
         >
-          {caption}
+          {titleAndBadge}
           <i className={buildClassName('icon', 'icon-expand', styles.captionIcon)} aria-hidden />
         </span>
       ) : (
-        <div className={styles.caption}>{caption}</div>
+        <div className={styles.caption}>{titleAndBadge}</div>
       )}
+      <div className={styles.card}>
+        <div
+          className={buildClassName(
+            styles.body,
+            OVERVIEW_CELL_BODY_CLASS,
+            'custom-scroll',
+            onShowAllClick && styles.bodyWithShowAll,
+          )}
+        >
+          {children}
+        </div>
+        {onShowAllClick && (
+          <Button isSimple className={styles.showAll} onClick={handleShowAllClick}>
+            <i className={buildClassName(styles.showAllIcon, showAllIcon)} aria-hidden />
+            <span className={styles.showAllLabel}>{showAllLabel}</span>
+          </Button>
+        )}
+      </div>
       {hasRenderedMenu && (
         <DropdownMenu
           isOpen={isMenuOpen}
@@ -136,7 +155,7 @@ function OverviewCell<T = undefined, MenuValue extends string = string>({
           getMenuElement={getMenuElement}
           getLayout={getLayout}
           items={renderedMenuItems}
-          selectedValue={selectedMenuValue}
+          shouldTranslateOptions
           bubbleClassName={styles.menu}
           shouldCleanup
           onSelect={handleMenuSelect}

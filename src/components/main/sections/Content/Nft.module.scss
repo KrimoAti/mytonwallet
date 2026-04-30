@@ -56,22 +56,13 @@ $gapSize: 0.5rem;
   margin-bottom: 1.25rem;
 }
 
-.listCompact {
-  display: grid;
-  grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
-  gap: 0.5rem;
-  align-self: flex-start;
-
-  width: 100%;
-  padding: 1rem;
-}
-
 .item {
   cursor: var(--custom-cursor, pointer);
 
   position: absolute;
   z-index: 0;
   top: calc(var(--row) * (var(--cell-height) + var(--row-gap-size)));
+  left: calc(var(--col, 0) * (var(--cell-width) + #{$gapSize}));
 
   width: var(--cell-width);
   min-width: 0;
@@ -80,46 +71,6 @@ $gapSize: 0.5rem;
 
   font-size: 0.9375rem;
   font-weight: 600;
-
-  &:nth-child(2n+1) {
-    left: 0;
-  }
-
-  &:nth-child(2n) {
-    left: calc(var(--cell-width) + #{$gapSize});
-  }
-
-  @include mixins.respond-above(xs) {
-    &:nth-child(3n + 1) {
-      left: 0 !important;
-    }
-
-    &:nth-child(3n + 2) {
-      left: calc(var(--cell-width) + #{$gapSize}) !important;
-    }
-
-    &:nth-child(3n) {
-      left: calc((var(--cell-width) + #{$gapSize}) * 2) !important;
-    }
-  }
-
-  @include mixins.respond-above(md) {
-    &:nth-child(4n + 1) {
-      left: 0 !important;
-    }
-
-    &:nth-child(4n + 2) {
-      left: calc(var(--cell-width) + #{$gapSize}) !important;
-    }
-
-    &:nth-child(4n + 3) {
-      left: calc((var(--cell-width) + #{$gapSize}) * 2) !important;
-    }
-
-    &:nth-child(4n) {
-      left: calc((var(--cell-width) + #{$gapSize}) * 3) !important;
-    }
-  }
 
   &,
   &:hover,
@@ -169,22 +120,42 @@ $gapSize: 0.5rem;
   }
 }
 
+// Widget mode: visual tweaks (smaller font, less padding); column placement is shared with the
+// full-screen list via inline `--col` on `.item`.
 .item.itemCompact {
-  position: relative;
-  top: auto;
-  left: auto;
-
-  width: 100%;
-  height: auto;
   padding-bottom: 0;
 
-  &:nth-child(n) {
-    left: auto !important;
+  .imageWrapper {
+    margin-bottom: 0.25rem;
   }
 
-  .imageWrapper {
-    margin-bottom: 0;
+  .infoWrapper,
+  .title {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
   }
+
+  .collection {
+    padding-top: 0;
+    font-weight: 500;
+    line-height: 1rem;
+    color: var(--color-gray-2);
+  }
+}
+
+// Widget container shouldn't carry the full-screen list's offset and bottom margin.
+// `.overview-cell-body` is `display: flex; flex-direction: column`, which would otherwise shrink the
+// list to the body's fixed height — `flex-shrink: 0` keeps the inline `height` set via `setExtraStyles`,
+// so absolute children remain reachable through the body's own scroll.
+.list.listWidget {
+  top: 0;
+  left: 0;
+
+  flex-shrink: 0;
+
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
 }
 
 .loadingWrapper {

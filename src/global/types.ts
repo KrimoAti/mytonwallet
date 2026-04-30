@@ -559,10 +559,12 @@ export interface AccountSettings {
   accentColorNft?: ApiNft;
   accentColorIndex?: number;
   isAllowSuspiciousActions?: boolean;
-  walletTokensLimit?: number;
   areAssetsHidden?: boolean;
   areCollectiblesHidden?: boolean;
+  overviewCellSize?: OverviewCellSize;
 }
+
+export type OverviewCellSize = 'small' | 'medium' | 'big';
 
 export interface SavedAddress {
   name: string;
@@ -1245,7 +1247,7 @@ export interface ActionPayloads {
   pinToken: { slug: string };
   unpinToken: { slug: string };
   toggleTokenVisibility: { slug: string; shouldShow: boolean };
-  setWalletTokensLimit: { limit: number };
+  setOverviewCellSize: { size: OverviewCellSize };
   setAreAssetsHidden: { isHidden: boolean };
   setAreCollectiblesHidden: { isHidden: boolean };
   addToken: { token: UserToken };

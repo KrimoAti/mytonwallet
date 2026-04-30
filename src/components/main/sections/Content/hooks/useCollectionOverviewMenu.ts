@@ -2,59 +2,72 @@ import { useMemo } from '../../../../../lib/teact/teact';
 import { getActions } from '../../../../../global';
 
 import type { ApiNftCollection } from '../../../../../api/types';
+import type { OverviewCellSize } from '../../../../../global/types';
 import type { DropdownItem } from '../../../../ui/Dropdown';
 
-import useLang from '../../../../../hooks/useLang';
+import buildOverviewCellSizeMenuItems from './buildOverviewCellSizeMenuItems';
+
 import useLastCallback from '../../../../../hooks/useLastCallback';
 
-export type CollectionMenuHandler = 'hide' | 'showAssets' | 'showCollectibles';
+export type CollectionMenuHandler = OverviewCellSize | 'hide' | 'showAssets' | 'showCollectibles';
 
 export default function useCollectionOverviewMenu({
+  overviewCellSize,
   canHide,
   isAssetCellVisible,
   isCollectibleCellVisible,
+  hiddenCheckClassName,
 }: {
+  overviewCellSize?: OverviewCellSize;
   canHide: boolean;
   isAssetCellVisible: boolean;
   isCollectibleCellVisible: boolean;
+  hiddenCheckClassName?: string;
 }) {
-  const { removeCollectionTab, setAreAssetsHidden, setAreCollectiblesHidden } = getActions();
-
-  const lang = useLang();
+  const {
+    setOverviewCellSize, removeCollectionTab, setAreAssetsHidden, setAreCollectiblesHidden,
+  } = getActions();
 
   const menuItems = useMemo<DropdownItem<CollectionMenuHandler>[]>(() => {
-    const items: DropdownItem<CollectionMenuHandler>[] = [{
-      value: 'hide',
-      name: lang('Hide Tab'),
-      fontIcon: 'eye-closed',
-      isDisabled: !canHide,
-    }];
+    const items: DropdownItem<CollectionMenuHandler>[] = [
+      ...buildOverviewCellSizeMenuItems<CollectionMenuHandler>(overviewCellSize, hiddenCheckClassName),
+      {
+        value: 'hide',
+        name: 'Hide Tab',
+        fontIcon: 'eye-closed',
+        isDisabled: !canHide,
+        withDelimiter: true,
+      },
+    ];
 
     if (!isAssetCellVisible) {
       items.push({
         value: 'showAssets',
-        name: lang('Show Assets'),
+        name: 'Show Assets',
         fontIcon: 'eye',
-        withDelimiter: true,
       });
     }
 
     if (!isCollectibleCellVisible) {
       items.push({
         value: 'showCollectibles',
-        name: lang('Show Collectibles'),
+        name: 'Show Collectibles',
         fontIcon: 'eye',
-        withDelimiter: isAssetCellVisible,
       });
     }
     return items;
-  }, [canHide, isAssetCellVisible, isCollectibleCellVisible, lang]);
+  }, [overviewCellSize, canHide, isAssetCellVisible, isCollectibleCellVisible, hiddenCheckClassName]);
 
   const handleMenuItemSelect = useLastCallback((
     value: CollectionMenuHandler,
     collection: ApiNftCollection,
   ) => {
     switch (value) {
+      case 'small':
+      case 'medium':
+      case 'big':
+        setOverviewCellSize({ size: value });
+        break;
       case 'hide':
         removeCollectionTab({ collection });
         break;

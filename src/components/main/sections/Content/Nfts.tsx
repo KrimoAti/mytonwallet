@@ -45,6 +45,7 @@ const SLIDE_TRANSITION_DURATION_MS = 300;
 interface OwnProps {
   isActive?: boolean;
   isWidget?: boolean;
+  isStretched?: boolean;
   collection?: ApiNftCollection;
 }
 
@@ -64,11 +65,10 @@ interface StateProps {
   animationDuration: number;
 }
 
-const COMPACT_GRID_LIMIT = 9;
-
 function Nfts({
   isActive,
   isWidget,
+  isStretched,
   orderedAddresses,
   selectedNfts,
   byAddress,
@@ -164,59 +164,45 @@ function Nfts({
     [isNftBuyingDisabled, isPortrait, lang],
   );
 
+  if (nftAddresses === undefined || (!isWidget && nftAddresses.length === 0 && isLoading)) {
+    return <div className={buildClassName(styles.loading, 'content-centered')}><Spinner /></div>;
+  }
+
+  if (nftAddresses.length === 0) {
+    return (
+      <EmptyListPlaceholder
+        stickerTgsUrl={isWidget ? undefined : ANIMATED_STICKERS_PATHS.happy}
+        stickerPreviewUrl={isWidget ? undefined : ANIMATED_STICKERS_PATHS.happyPreview}
+        stickerSize={isWidget
+          ? undefined
+          : (isPortrait ? ANIMATED_STICKER_SMALL_SIZE_PX : ANIMATED_STICKER_BIG_SIZE_PX)}
+        isStickerActive={isWidget ? undefined : isActive}
+        title={lang('No collectibles yet')}
+        description={isWidget
+          ? (!isNftBuyingDisabled ? lang('$nft_explore_offer') : undefined)
+          : fullDescription}
+        className="content-centered"
+        actionText={!isNftBuyingDisabled
+          ? lang('Open %nft_marketplace%', { nft_marketplace: nftMarketplaceTitle })
+          : undefined}
+        onActionClick={!isNftBuyingDisabled ? handleNftMarketplaceClick : undefined}
+      />
+    );
+  }
+
   if (isWidget) {
-    if (nftAddresses === undefined) {
-      return <div className={styles.loading}><Spinner /></div>;
-    }
-
-    if (nftAddresses.length === 0) {
-      return (
-        <EmptyListPlaceholder
-          title={lang('No collectibles yet')}
-          description={!isNftBuyingDisabled ? lang('$nft_explore_offer') : undefined}
-          actionText={
-            !isNftBuyingDisabled
-              ? lang('Open %nft_marketplace%', { nft_marketplace: nftMarketplaceTitle })
-              : undefined
-          }
-          onActionClick={!isNftBuyingDisabled ? handleNftMarketplaceClick : undefined}
-        />
-      );
-    }
-
     return (
       <NftList
         isWidget
-        addresses={nftAddresses.slice(0, COMPACT_GRID_LIMIT)}
+        isWidgetStretched={isStretched}
+        isActive={isActive}
+        addresses={nftAddresses}
         appTheme={appTheme}
         dnsExpiration={dnsExpiration}
         isViewAccount={isViewAccount}
         isMultichainAccount={isMultichainAccount}
         nftsByAddresses={byAddress!}
         selectedNfts={selectedNfts}
-      />
-    );
-  }
-
-  if (nftAddresses === undefined || (nftAddresses.length === 0 && isLoading)) {
-    return <div className={styles.loading}><Spinner /></div>;
-  }
-
-  if (nftAddresses.length === 0) {
-    return (
-      <EmptyListPlaceholder
-        stickerTgsUrl={ANIMATED_STICKERS_PATHS.happy}
-        stickerPreviewUrl={ANIMATED_STICKERS_PATHS.happyPreview}
-        stickerSize={isPortrait ? ANIMATED_STICKER_SMALL_SIZE_PX : ANIMATED_STICKER_BIG_SIZE_PX}
-        isStickerActive={isActive}
-        title={lang('No collectibles yet')}
-        description={fullDescription}
-        actionText={
-          !isNftBuyingDisabled
-            ? lang('Open %nft_marketplace%', { nft_marketplace: nftMarketplaceTitle })
-            : undefined
-        }
-        onActionClick={!isNftBuyingDisabled ? handleNftMarketplaceClick : undefined}
       />
     );
   }

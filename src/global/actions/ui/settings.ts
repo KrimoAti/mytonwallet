@@ -80,6 +80,14 @@ addActionHandler('setIsAutoConfirmEnabled', (global, actions, { isEnabled }) => 
   };
 });
 
+addActionHandler('setOverviewCellSize', (global, actions, { size }) => {
+  const accountId = selectCurrentAccountId(global)!;
+
+  return updateAccountSettings(global, accountId, {
+    overviewCellSize: size,
+  });
+});
+
 addActionHandler('setIsAllowSuspiciousActions', (global, actions, { isEnabled }) => {
   const accountId = selectCurrentAccountId(global)!;
 

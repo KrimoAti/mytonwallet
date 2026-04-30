@@ -4,6 +4,8 @@ import { getActions, withGlobal } from '../../../../global';
 import type { Theme } from '../../../../global/types';
 
 import { IS_CORE_WALLET } from '../../../../config';
+import { selectCurrentAccountSettings } from '../../../../global/selectors';
+import { ACCENT_COLORS } from '../../../../util/accentColor/constants';
 import buildClassName from '../../../../util/buildClassName';
 import buildStyle from '../../../../util/buildStyle';
 import { ANIMATED_STICKERS_PATHS } from '../../../ui/helpers/animatedAssets';
@@ -25,13 +27,14 @@ interface StateProps {
   areSettingsOpen?: boolean;
   isAgentOpen?: boolean;
   isExploreOpen?: boolean;
+  accentColorIndex?: number;
 }
 
 const ICON_SIZE_PX = 38;
 const ANIMATED_STICKER_SPEED = 2;
 
 function BottomBar({
-  theme, areSettingsOpen, isAgentOpen, isExploreOpen,
+  theme, areSettingsOpen, isAgentOpen, isExploreOpen, accentColorIndex,
 }: StateProps) {
   const { switchToWallet, switchToAgent, switchToExplore, switchToSettings } = getActions();
 
@@ -39,6 +42,7 @@ function BottomBar({
   const [isHidden, setIsHidden] = useState(getIsBottomBarHidden());
   const appTheme = useAppTheme(theme);
   const stickerPaths = ANIMATED_STICKERS_PATHS[appTheme];
+  const accentColor = accentColorIndex !== undefined ? ACCENT_COLORS[appTheme][accentColorIndex] : undefined;
 
   useEffectOnce(() => {
     return subscribeToBottomBarVisibility(() => {
@@ -66,6 +70,7 @@ function BottomBar({
           label={lang('Wallet')}
           tgsUrl={isWalletTabActive ? stickerPaths.iconWalletSolid : stickerPaths.iconWallet}
           previewUrl={isWalletTabActive ? stickerPaths.preview.iconWalletSolid : stickerPaths.preview.iconWallet}
+          accentColor={accentColor}
           onClick={switchToWallet}
         />
         {!IS_CORE_WALLET && (
@@ -75,6 +80,7 @@ function BottomBar({
               label={lang('Agent')}
               tgsUrl={isAgentOpen ? stickerPaths.iconAgentSolid : stickerPaths.iconAgent}
               previewUrl={isAgentOpen ? stickerPaths.preview.iconAgentSolid : stickerPaths.preview.iconAgent}
+              accentColor={accentColor}
               onClick={switchToAgent}
             />
             <TabButton
@@ -82,6 +88,7 @@ function BottomBar({
               label={lang('Explore')}
               tgsUrl={isExploreOpen ? stickerPaths.iconExploreSolid : stickerPaths.iconExplore}
               previewUrl={isExploreOpen ? stickerPaths.preview.iconExploreSolid : stickerPaths.preview.iconExplore}
+              accentColor={accentColor}
               onClick={switchToExplore}
             />
           </>
@@ -91,6 +98,7 @@ function BottomBar({
           label={lang('Settings')}
           tgsUrl={areSettingsOpen ? stickerPaths.iconSettingsSolid : stickerPaths.iconSettings}
           previewUrl={areSettingsOpen ? stickerPaths.preview.iconSettingsSolid : stickerPaths.preview.iconSettings}
+          accentColor={accentColor}
           onClick={switchToSettings}
         />
       </div>
@@ -106,16 +114,18 @@ export default memo(withGlobal((global): StateProps => {
     areSettingsOpen,
     isAgentOpen,
     isExploreOpen,
+    accentColorIndex: selectCurrentAccountSettings(global)?.accentColorIndex,
   };
 })(BottomBar));
 
 function TabButton({
-  label, tgsUrl, previewUrl, isActive, onClick,
+  label, tgsUrl, previewUrl, isActive, accentColor, onClick,
 }: {
   isActive?: boolean;
   label: string;
   tgsUrl: string;
   previewUrl: string;
+  accentColor?: string;
   onClick: NoneToVoidFunction;
 }) {
   const [isAnimating, startAnimation, stopAnimation] = useFlag();
@@ -138,6 +148,7 @@ function TabButton({
         nonInteractive
         forceOnHeavyAnimation
         className={styles.icon}
+        color={accentColor}
         tgsUrl={tgsUrl}
         previewUrl={previewUrl}
         onEnded={stopAnimation}

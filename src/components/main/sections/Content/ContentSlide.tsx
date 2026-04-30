@@ -39,12 +39,17 @@ function ContentSlide({
 }: OwnProps) {
   if (currentCollection && activeTabId !== ContentTab.Nft) {
     return (
-      <div onScroll={onScroll}>
+      <Transition
+        activeKey={activeNftKey}
+        name={isPortrait ? 'slide' : 'slideFade'}
+        className={styles.nftsContainer}
+        onScroll={onScroll}
+      >
         <Nfts
           key={`custom:${currentCollection.address}`}
           isActive={isActive}
         />
-      </div>
+      </Transition>
     );
   }
 

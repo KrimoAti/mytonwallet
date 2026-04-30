@@ -1164,3 +1164,6 @@ Top %amount%: ท็อป %amount%
 No subwallets yet.: ยังไม่มีวอลเล็ตย่อย
 $subwallets_found: "พบ: %1$d"
 Send, receive, and trade tokens and collectibles.: ส่ง รับ และแลกเปลี่ยนโทเคนและของสะสม
+$overview_cell_size_small: เล็ก
+$overview_cell_size_medium: กลาง
+$overview_cell_size_big: ใหญ่

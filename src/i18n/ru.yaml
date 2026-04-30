@@ -1184,3 +1184,6 @@ $subwallets_found:
   fewValue: "Найдено: %1$d"
   manyValue: "Найдено: %1$d"
 Send, receive, and trade tokens and collectibles.: Отправляйте, получайте и торгуйте токенами и коллекционными предметами.
+$overview_cell_size_small: Маленький
+$overview_cell_size_medium: Средний
+$overview_cell_size_big: Большой

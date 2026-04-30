@@ -2,12 +2,13 @@ import React, { memo, useMemo } from '../../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../../global';
 
 import type { ApiNft, ApiNftCollection } from '../../../../api/types';
+import type { OverviewCellSize } from '../../../../global/types';
 import type { AssetsMenuHandler } from './hooks/useAssetsOverviewMenu';
 import type { CollectiblesMenuHandler } from './hooks/useCollectiblesOverviewMenu';
 import type { CollectionMenuHandler } from './hooks/useCollectionOverviewMenu';
 import { ContentTab } from '../../../../global/types';
 
-import { DESKTOP_MIN_ASSETS_TAB_VIEW, TELEGRAM_GIFTS_SUPER_COLLECTION } from '../../../../config';
+import { TELEGRAM_GIFTS_SUPER_COLLECTION } from '../../../../config';
 import { buildNftCollectionIndex, getCollectionKey } from '../../../../global/helpers/nfts';
 import {
   selectCurrentAccountId,
@@ -24,7 +25,7 @@ import useCollectionOverviewMenu from './hooks/useCollectionOverviewMenu';
 
 import LandscapeTopActions from '../Actions/LandscapeTopActions';
 import Activities from './Activities';
-import Assets, { COMPACT_LIMIT_DEFAULT } from './Assets';
+import Assets from './Assets';
 import Nfts from './Nfts';
 import OverviewCell from './OverviewCell';
 
@@ -33,7 +34,6 @@ import styles from './LandscapeWalletOverview.module.scss';
 const SCROLL_CONTAINER_CLASS = 'landscape-overview-scroll';
 const SCROLL_CONTAINER_SELECTOR = `.${SCROLL_CONTAINER_CLASS}`;
 
-const ASSETS_LIMIT_OPTIONS = [DESKTOP_MIN_ASSETS_TAB_VIEW, 10, 30];
 const MIN_VISIBLE_CELLS = 1;
 
 interface OwnProps {
@@ -46,7 +46,7 @@ interface StateProps {
   nftsByAddress?: Record<string, ApiNft>;
   blacklistedNftAddresses?: string[];
   whitelistedNftAddresses?: string[];
-  walletTokensLimit?: number;
+  overviewCellSize: OverviewCellSize;
   isAssetCellVisible: boolean;
   isCollectibleCellVisible: boolean;
 }
@@ -57,7 +57,7 @@ function LandscapeWalletOverview({
   nftsByAddress,
   blacklistedNftAddresses,
   whitelistedNftAddresses,
-  walletTokensLimit,
+  overviewCellSize,
   isAssetCellVisible,
   isCollectibleCellVisible,
   onStakedTokenClick,
@@ -75,16 +75,11 @@ function LandscapeWalletOverview({
     collectionTabs?.filter((tab) => collectionByKey.has(getCollectionKey(tab.chain, tab.address))) ?? []
   ), [collectionTabs, collectionByKey]);
 
-  const compactLimit = walletTokensLimit ?? COMPACT_LIMIT_DEFAULT;
-  const selectedAssetsLimit = walletTokensLimit && ASSETS_LIMIT_OPTIONS.includes(walletTokensLimit)
-    ? (walletTokensLimit === DESKTOP_MIN_ASSETS_TAB_VIEW ? 'topMin' : `top${walletTokensLimit}`) as AssetsMenuHandler
-    : undefined;
-
   const totalVisibleCells = (isAssetCellVisible ? 1 : 0)
     + (isCollectibleCellVisible ? 1 : 0)
     + visibleCollectionTabs.length;
   const canHideCurrentCell = totalVisibleCells > MIN_VISIBLE_CELLS;
-  const hasMoreAssets = totalTokensAmount > compactLimit;
+  const hasMoreAssets = totalTokensAmount > 0;
   const isNftsDataReady = nftsByAddress !== undefined;
   const potentialMaxCells = (isAssetCellVisible ? 1 : 0)
     + (isCollectibleCellVisible ? 1 : 0)
@@ -118,7 +113,7 @@ function LandscapeWalletOverview({
     menuItems: assetsMenuItems,
     handleMenuItemSelect: handleAssetsMenuSelect,
   } = useAssetsOverviewMenu({
-    selectedAssetsLimit,
+    overviewCellSize,
     isCollectibleCellVisible,
     canHide: canHideCurrentCell,
     hiddenCheckClassName: styles.hiddenCheck,
@@ -127,21 +122,28 @@ function LandscapeWalletOverview({
   const {
     menuItems: collectiblesMenuItems,
     handleMenuItemSelect: handleCollectiblesMenuSelect,
-  } = useCollectiblesOverviewMenu({ canHide: canHideCurrentCell, isAssetCellVisible });
+  } = useCollectiblesOverviewMenu({
+    overviewCellSize,
+    canHide: canHideCurrentCell,
+    isAssetCellVisible,
+    hiddenCheckClassName: styles.hiddenCheck,
+  });
 
   const {
     menuItems: collectionMenuItems,
     handleMenuItemSelect: handleCollectionMenuSelect,
   } = useCollectionOverviewMenu({
+    overviewCellSize,
     canHide: canHideCurrentCell,
     isAssetCellVisible,
     isCollectibleCellVisible,
+    hiddenCheckClassName: styles.hiddenCheck,
   });
 
   return (
     <div className={buildClassName(styles.wrapper, 'custom-scroll', SCROLL_CONTAINER_CLASS)}>
       <LandscapeTopActions />
-      <div className={buildClassName(styles.row, shouldStretchCell && styles.rowStretched)}>
+      <div className={buildClassName(styles.row, shouldStretchCell && styles.rowStretched, 'no-swipe')}>
         {isAssetCellVisible && (
           <OverviewCell<undefined, AssetsMenuHandler>
             caption={lang('Assets')}
@@ -149,7 +151,7 @@ function LandscapeWalletOverview({
             showAllIcon="icon-show-all"
             showAllAmount={totalTokensAmount}
             menuItems={assetsMenuItems}
-            selectedMenuValue={selectedAssetsLimit}
+            size={overviewCellSize}
             className={stretchedCellClass}
             onShowAllClick={hasMoreAssets ? handleShowAllAssets : undefined}
             onMenuItemClick={handleAssetsMenuSelect}
@@ -157,7 +159,6 @@ function LandscapeWalletOverview({
             <Assets
               isActive
               isWidget
-              compactLimit={compactLimit}
               onTokenClick={handleTokenClick}
               onStakedTokenClick={onStakedTokenClick}
             />
@@ -167,9 +168,10 @@ function LandscapeWalletOverview({
           <OverviewCell<undefined, CollectiblesMenuHandler>
             caption={lang('Collectibles')}
             showAllLabel={lang('Show All Collectibles')}
-            showAllIcon="icon-show-all"
+            showAllIcon="icon-show-all-collectibles"
             showAllAmount={totalNftsAmount}
             menuItems={collectiblesMenuItems}
+            size={overviewCellSize}
             className={stretchedCellClass}
             onShowAllClick={totalNftsAmount ? handleShowAllNfts : undefined}
             onMenuItemClick={handleCollectiblesMenuSelect}
@@ -177,6 +179,7 @@ function LandscapeWalletOverview({
             <Nfts
               isActive
               isWidget
+              isStretched={shouldStretchCell}
             />
           </OverviewCell>
         )}
@@ -192,10 +195,13 @@ function LandscapeWalletOverview({
                 'Show All %collection_name%',
                 { collection_name: collectionCaption },
               ) as string}
-              showAllIcon={isTelegramGifts ? buildClassName(styles.gifIconFix, 'icon-gift') : 'icon-show-all'}
+              showAllIcon={isTelegramGifts
+                ? buildClassName(styles.gifIconFix, 'icon-gift')
+                : 'icon-show-all-collectibles'}
               showAllAmount={collectionByKey.get(collectionKey)?.count}
               clickArg={collection}
               menuItems={collectionMenuItems}
+              size={overviewCellSize}
               className={stretchedCellClass}
               onShowAllClick={handleShowCollection}
               onMenuItemClick={handleCollectionMenuSelect}
@@ -203,6 +209,7 @@ function LandscapeWalletOverview({
               <Nfts
                 isActive
                 isWidget
+                isStretched={shouldStretchCell}
                 collection={collection}
               />
             </OverviewCell>
@@ -231,7 +238,7 @@ export default memo(
         nftsByAddress: accountState?.nfts?.byAddress,
         blacklistedNftAddresses: accountState?.blacklistedNftAddresses,
         whitelistedNftAddresses: accountState?.whitelistedNftAddresses,
-        walletTokensLimit: accountSettings?.walletTokensLimit,
+        overviewCellSize: accountSettings?.overviewCellSize ?? 'small',
         isAssetCellVisible: !accountSettings?.areAssetsHidden,
         isCollectibleCellVisible: !accountSettings?.areCollectiblesHidden,
       };

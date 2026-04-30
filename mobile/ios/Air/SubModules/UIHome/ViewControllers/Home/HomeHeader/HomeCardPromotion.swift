@@ -16,12 +16,16 @@ struct HomeCardPromotionVisual: View {
     let accountContext: AccountContext
 
     var body: some View {
-        WithPerceptionTracking {
-            if let promotion = accountContext.activePromotion, promotion.kind == .cardOverlay {
-                _HomeCardPromotionVisual(promotion: promotion)
-            } else {
-                EmptyView()
+        if !IS_GRAM_WALLET {
+            WithPerceptionTracking {
+                if let promotion = accountContext.activePromotion, promotion.kind == .cardOverlay {
+                    _HomeCardPromotionVisual(promotion: promotion)
+                } else {
+                    EmptyView()
+                }
             }
+        } else {
+            EmptyView()
         }
     }
 }
@@ -90,7 +94,7 @@ struct HomeCardPromotionHitArea: View {
     let cardSize: CGSize
 
     var body: some View {
-        if let promotion, promotion.kind == .cardOverlay {
+        if !IS_GRAM_WALLET, let promotion, promotion.kind == .cardOverlay {
             let frame = hitAreaFrame(for: promotion)
             Button {
                 handlePromotionTap(promotion)

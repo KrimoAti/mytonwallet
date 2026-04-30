@@ -34,9 +34,7 @@ struct AboutView: View {
         let websiteUrl = URL(string: APP_WEBSITE_URL)!
         let websiteTitle = websiteUrl.host ?? APP_WEBSITE_URL
         VStack(spacing: 14) {
-            Image.airBundle(IS_GRAM_WALLET ? "IntroLogoGramWallet" : "IntroLogo")
-                .resizable()
-                .frame(width: 96, height: 96)
+            headerIcon
             VStack(spacing: 4) {
                 Text("\(APP_NAME) \(appVersion)")
                     .font(.system(size: 17, weight: .semibold))
@@ -48,6 +46,18 @@ struct AboutView: View {
             UIApplication.shared.open(url)
             return .handled
         })
+    }
+
+    @ViewBuilder
+    var headerIcon: some View {
+        if IS_GRAM_WALLET {
+            WUISpeedingDiamond(size: 96)
+                .frame(width: 96, height: 96)
+        } else {
+            Image.airBundle("IntroLogo")
+                .resizable()
+                .frame(width: 96, height: 96)
+        }
     }
     
     var longDescription: some View {

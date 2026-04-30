@@ -66,10 +66,6 @@ addActionHandler('toggleTokenVisibility', (global, actions, { slug, shouldShow }
   });
 });
 
-addActionHandler('setWalletTokensLimit', (global, actions, { limit }) => {
-  return updateCurrentAccountSettings(global, { walletTokensLimit: limit });
-});
-
 addActionHandler('setAreAssetsHidden', (global, actions, { isHidden }) => {
   return updateCurrentAccountSettings(global, {
     areAssetsHidden: isHidden ? true : undefined,

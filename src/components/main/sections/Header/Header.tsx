@@ -80,6 +80,7 @@ function Header({
   onChartCardBack,
 }: OwnProps & StateProps) {
   const lang = useLang();
+
   const { isPortrait } = useDeviceScreen();
   const canToggleAppLayout = IS_EXTENSION || IS_ELECTRON;
   const isQrScannerSupported = useQrScannerSupport() && !isViewMode;
@@ -113,16 +114,18 @@ function Header({
     return (
       <div className={fullClassName}>
         <div className={buildClassName(styles.headerInner, styles.chartCardHeader)}>
-          <Button
-            isSimple
-            isText
-            onClick={onChartCardBack}
-            className={styles.chartCardBackButton}
-            ariaLabel={lang('Back')}
-          >
-            <i className={buildClassName(styles.chartCardBackIcon, 'icon-chevron-left')} aria-hidden />
-            <span>{lang('Back')}</span>
-          </Button>
+          {isPortrait && (
+            <Button
+              isSimple
+              isText
+              onClick={onChartCardBack}
+              className={styles.chartCardBackButton}
+              ariaLabel={lang('Back')}
+            >
+              <i className={buildClassName(styles.chartCardBackIcon, 'icon-chevron-left')} aria-hidden />
+              <span>{lang('Back')}</span>
+            </Button>
+          )}
           <div className={styles.tokenModeTabsWrapper}>
             {isNetWorthChartAvailable ? (
               <TabList

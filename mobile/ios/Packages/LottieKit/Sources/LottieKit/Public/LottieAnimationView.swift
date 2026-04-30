@@ -52,6 +52,8 @@ public final class LottieAnimationView: UIImageView {
         }
     }
 
+    public var playbackSpeed: Double = 1.0
+
     public var externalShouldPlay: Bool? {
         didSet {
             guard self.externalShouldPlay != oldValue else {
@@ -344,7 +346,7 @@ public final class LottieAnimationView: UIImageView {
 
         let timestamp = displayLink.timestamp
         if let lastTimestamp = self.lastTimestamp {
-            self.accumulatedTime += timestamp - lastTimestamp
+            self.accumulatedTime += (timestamp - lastTimestamp) * max(self.playbackSpeed, 0)
         }
         self.lastTimestamp = timestamp
 

@@ -1,10 +1,10 @@
-import React, { memo, useMemo } from '../../../../lib/teact/teact';
+import React, { memo, useMemo, useRef } from '../../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../../global';
 
 import type {
   ApiBaseCurrency, ApiCurrencyRates, ApiStakingState, ApiTokenWithPrice, ApiVestingInfo,
 } from '../../../../api/types';
-import type { Theme, UserSwapToken, UserToken } from '../../../../global/types';
+import type { LoadMoreDirection, Theme, UserSwapToken, UserToken } from '../../../../global/types';
 import { SettingsState } from '../../../../global/types';
 
 import { ANIMATED_STICKER_SMALL_SIZE_PX, IS_CORE_WALLET } from '../../../../config';
@@ -27,6 +27,7 @@ import { toDecimal } from '../../../../util/decimals';
 import { buildCollectionByKey } from '../../../../util/iteratees';
 import { MEMO_EMPTY_ARRAY } from '../../../../util/memo';
 import { getIsActiveStakingState, getStakingStateStatus } from '../../../../util/staking';
+import { REM } from '../../../../util/windowEnvironment';
 import { ANIMATED_STICKERS_PATHS } from '../../../ui/helpers/animatedAssets';
 import { getScrollContainerClosestSelector } from '../../helpers/scrollableContainer';
 
@@ -43,6 +44,7 @@ import useVesting from '../../../../hooks/useVesting';
 import InfiniteScroll from '../../../ui/InfiniteScroll';
 import Spinner from '../../../ui/Spinner';
 import EmptyListPlaceholder from './EmptyListPlaceholder';
+import { OVERVIEW_CELL_BODY_CLASS } from './OverviewCell';
 import Token from './Token';
 import TokenListItem from './TokenListItem';
 
@@ -52,7 +54,6 @@ type OwnProps = {
   isActive?: boolean;
   isSeparatePanel?: boolean;
   isWidget?: boolean;
-  compactLimit?: number;
   onTokenClick: (slug: string) => void;
   onStakedTokenClick: (stakingId?: string) => void;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
@@ -80,8 +81,6 @@ interface StateProps {
 
 const TOKEN_HEIGHT_REM = 4;
 
-export const COMPACT_LIMIT_DEFAULT = 6;
-
 function Assets({
   isActive,
   tokens,
@@ -90,7 +89,6 @@ function Assets({
   isInvestorViewEnabled,
   isSeparatePanel,
   isWidget,
-  compactLimit = COMPACT_LIMIT_DEFAULT,
   currentTokenSlug,
   baseCurrency,
   mycoin,
@@ -167,12 +165,36 @@ function Assets({
     isActive,
     withResetOnInactive: isPortrait,
   });
+
   const viewportIndex = useMemo(() => {
     if (!viewportSlugs) return -1;
-
-    const index = tokenSlugs!.indexOf(viewportSlugs[0]);
-    return shouldRenderVestingToken ? index + 1 : index;
+    const baseIndex = tokenSlugs!.indexOf(viewportSlugs[0]);
+    return shouldRenderVestingToken ? baseIndex + 1 : baseIndex;
   }, [shouldRenderVestingToken, tokenSlugs, viewportSlugs]);
+
+  // Smart jump for widget mode: when `InfiniteScroll` asks to load more after a fast scroll
+  // that left the viewport far outside the rendered window, recenter the slice around the
+  // current scroll position in a single hop instead of shifting by `listSlice` per cycle
+  const widgetContainerRef = useRef<HTMLDivElement>();
+  const handleWidgetGetMore = useLastCallback((args: { direction: LoadMoreDirection }) => {
+    if (!getMore || !tokenSlugs?.length) return;
+
+    const scrollContainer = widgetContainerRef.current
+      ?.closest<HTMLDivElement>(`.${OVERVIEW_CELL_BODY_CLASS}`);
+    if (!scrollContainer) {
+      getMore(args);
+      return;
+    }
+
+    const itemHeightPx = TOKEN_HEIGHT_REM * REM;
+    const vestingOffsetPx = shouldRenderVestingToken ? itemHeightPx : 0;
+    const visibleCenterPx = scrollContainer.scrollTop + scrollContainer.offsetHeight / 2;
+    const targetIndex = Math.max(
+      0,
+      Math.min(tokenSlugs.length - 1, Math.floor((visibleCenterPx - vestingOffsetPx) / itemHeightPx)),
+    );
+    getMore({ direction: args.direction, offsetId: tokenSlugs[targetIndex] });
+  });
   const tokensBySlug = useMemo(() => (
     allTokensWithStaked ? buildCollectionByKey(allTokensWithStaked, 'slug') : undefined
   ), [allTokensWithStaked]);
@@ -260,54 +282,8 @@ function Assets({
           baseCurrency={baseCurrency}
           appTheme={appTheme}
           isSensitiveDataHidden={isSensitiveDataHidden}
+          tokenClassName={isWidget ? styles.tokenInWidget : undefined}
           onClick={onVestingTokenClick}
-        />
-      </TokenListItem>
-    );
-  }
-
-  function renderCompactToken(token: UserToken) {
-    const { stakingId, isStaking, slug, amount, decimals } = token;
-    const stakingState = stakingId ? stakingStateById[stakingId] : undefined;
-
-    const baseTokenState = !isStaking && !stakedTokenSlugs.has(slug)
-      ? stateByTokenSlug[slug]
-      : undefined;
-
-    const { annualYield, yieldType } = stakingState || baseTokenState || {};
-    const stakingStatus = stakingState ? getStakingStateStatus(stakingState) : undefined;
-    const isStakingAvailable = Boolean(baseTokenState && !isStakingDisabled);
-    const isSwapAvailable = Boolean(swapTokensBySlug[slug]);
-    const isPinned = pinnedSlugsSet.has(slug);
-    const amountDecimal = isStaking ? toDecimal(amount, decimals) : undefined;
-
-    return (
-      <TokenListItem
-        key={slug}
-        topOffset={0}
-        withAnimation={false}
-        isWidget
-      >
-        <Token
-          token={token}
-          stakingStatus={stakingStatus}
-          stakingState={stakingState}
-          annualYield={annualYield}
-          yieldType={yieldType}
-          amount={amountDecimal}
-          isInvestorView={isInvestorViewEnabled}
-          isActive={token.slug === currentTokenSlug}
-          baseCurrency={baseCurrency}
-          withChainIcon={isMultichainAccount}
-          appTheme={appTheme}
-          isSensitiveDataHidden={isSensitiveDataHidden}
-          withContextMenu
-          tokenClassName={buildClassName(isWidget && styles.tokenInWidget)}
-          isViewMode={isViewMode}
-          isStakingAvailable={isStakingAvailable}
-          isSwapDisabled={isSwapDisabled || !isSwapAvailable}
-          isPinned={isPinned}
-          onClick={handleTokenClick}
         />
       </TokenListItem>
     );
@@ -330,15 +306,15 @@ function Assets({
     const isSwapAvailable = Boolean(swapTokensBySlug[slug]);
     const isPinned = pinnedSlugsSet.has(slug);
     const amountDecimal = isStaking ? toDecimal(amount, decimals) : undefined;
-    const shouldFadeInPlace = slug === pinToggledSlug;
-    const withPinTransition = isPinAnimatable && slug === pinToggledSlug;
+    const isPinToggled = slug === pinToggledSlug;
+    const withPinTransition = isPinToggled && isPinAnimatable;
 
     return (
       <TokenListItem
         key={slug}
         topOffset={topOffset}
         withAnimation={shouldUseAnimations}
-        shouldFadeInPlace={shouldFadeInPlace}
+        shouldFadeInPlace={isPinToggled}
       >
         <Token
           token={token}
@@ -354,6 +330,7 @@ function Assets({
           appTheme={appTheme}
           isSensitiveDataHidden={isSensitiveDataHidden}
           withContextMenu
+          tokenClassName={isWidget ? styles.tokenInWidget : undefined}
           isViewMode={isViewMode}
           isStakingAvailable={isStakingAvailable}
           isSwapDisabled={isSwapDisabled || !isSwapAvailable}
@@ -367,40 +344,38 @@ function Assets({
 
   const isEmpty = !shouldRenderVestingToken && !tokenSlugs?.length;
 
-  if (isWidget) {
-    if (isEmpty) {
-      return (
-        <EmptyListPlaceholder
-          title={lang('No tokens yet')}
-          description={lang('$no_tokens_description')}
-          actionText={lang('Add Tokens')}
-          onActionClick={handleOpenTokenSettings}
-        />
-      );
-    }
-
-    const compactTokens = allTokensWithStaked
-      ?.filter(({ isDisabled }) => !isDisabled)
-      .slice(0, compactLimit) ?? [];
-
-    return (
-      <div className={styles.compactWrapper}>
-        {compactTokens.map((token) => renderCompactToken(token))}
-      </div>
-    );
-  }
-
   if (isEmpty) {
     return (
       <EmptyListPlaceholder
-        stickerTgsUrl={ANIMATED_STICKERS_PATHS.noData}
-        stickerPreviewUrl={ANIMATED_STICKERS_PATHS.noDataPreview}
-        stickerSize={ANIMATED_STICKER_SMALL_SIZE_PX}
+        stickerTgsUrl={isWidget ? undefined : ANIMATED_STICKERS_PATHS.noData}
+        stickerPreviewUrl={isWidget ? undefined : ANIMATED_STICKERS_PATHS.noDataPreview}
+        stickerSize={isWidget ? undefined : ANIMATED_STICKER_SMALL_SIZE_PX}
         title={lang('No tokens yet')}
         description={lang('$no_tokens_description')}
         actionText={lang('Add Tokens')}
         onActionClick={handleOpenTokenSettings}
       />
+    );
+  }
+
+  if (isWidget) {
+    const widgetStyle = currentContainerHeight ? `height: ${currentContainerHeight}rem` : undefined;
+
+    return (
+      <InfiniteScroll
+        ref={widgetContainerRef}
+        className={styles.compactWrapper}
+        scrollContainerClosest={`.${OVERVIEW_CELL_BODY_CLASS}`}
+        items={viewportSlugs}
+        itemSelector=".token-list-item"
+        withAbsolutePositioning
+        maxHeight={currentContainerHeight === undefined ? undefined : `${currentContainerHeight}rem`}
+        style={widgetStyle}
+        onLoadMore={handleWidgetGetMore}
+      >
+        {shouldRenderVestingToken && renderVestingToken()}
+        {viewportSlugs?.map((tokenSlug, i) => renderToken(tokensBySlug![tokenSlug], i))}
+      </InfiniteScroll>
     );
   }
 

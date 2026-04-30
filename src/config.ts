@@ -225,7 +225,7 @@ export const PROXY_HOSTS = process.env.PROXY_HOSTS;
 export const TINY_TRANSFER_MAX_COST = 0.01;
 
 export const IMAGE_CACHE_NAME = IS_EXPLORER ? 'explorer-image' : 'mtw-image';
-export const LANG_CACHE_NAME = 'mtw-lang-292';
+export const LANG_CACHE_NAME = 'mtw-lang-293';
 
 export const LANG_LIST: LangItem[] = [{
   langCode: 'en',
@@ -566,7 +566,7 @@ export const BASE_USDC_MAINNET = {
 export const BSC_USDT_MAINNET = {
   name: 'Tether USD',
   symbol: 'USDT',
-  decimals: 6,
+  decimals: 18,
   chain: 'bnb',
   slug: 'bnb-0x55d39832',
   tokenAddress: '0x55d398326f99059ff775485246999027b3197955',
@@ -680,7 +680,6 @@ export const WINDOW_PROVIDER_PORT = `${IS_CORE_WALLET ? 'TonWallet' : 'MyTonWall
 
 export const SHOULD_SHOW_ALL_ASSETS_AND_ACTIVITY = IS_CORE_WALLET;
 export const PORTRAIT_MIN_ASSETS_TAB_VIEW = 6;
-export const DESKTOP_MIN_ASSETS_TAB_VIEW = 7;
 
 export const DEFAULT_PRICE_CURRENCY = 'USD';
 export const CURRENCIES: Record<

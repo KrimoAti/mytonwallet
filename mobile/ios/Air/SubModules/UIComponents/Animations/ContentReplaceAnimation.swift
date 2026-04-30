@@ -25,16 +25,20 @@ private final class ContentReplaceAnimation: NSObject, UIViewControllerAnimatedT
         }
         
         let container = context.containerView
-        let toView = toVC.view!
-        let fromView = fromVC.view!
+        let toView = context.view(forKey: .to) ?? toVC.view!
+        let fromView = context.view(forKey: .from) ?? fromVC.view!
         
-        container.addSubview(toView)
-        container.backgroundColor = toView.backgroundColor
-        
-        toView.alpha = 0.0
-        toView.transform = CGAffineTransform(scaleX: scaleOut, y: scaleOut)
-        fromView.alpha = 1.0
-        fromView.transform = .identity
+        UIView.performWithoutAnimation {
+            toView.frame = context.finalFrame(for: toVC)
+            toView.alpha = 0.0
+            toView.transform = CGAffineTransform(scaleX: scaleOut, y: scaleOut)
+            fromView.alpha = 1.0
+            fromView.transform = .identity
+            container.addSubview(toView)
+            container.backgroundColor = toView.backgroundColor
+            toView.setNeedsLayout()
+            toView.layoutIfNeeded()
+        }
         
         let duration = transitionDuration(using: context)
         

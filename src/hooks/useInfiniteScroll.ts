@@ -9,7 +9,15 @@ import usePrevious from './usePrevious';
 import usePrevious2 from './usePrevious2';
 import useSyncEffect from './useSyncEffect';
 
-type GetMore = (args: { direction: LoadMoreDirection }) => void;
+type GetMore<ListId = string | number> = (args: {
+  direction: LoadMoreDirection;
+  /**
+   * Optional anchor for the new viewport. When set, the next viewport slice is centered around
+   * this id instead of using the current viewport edge — used for fast-jump scenarios when the
+   * scroll position has moved far outside the rendered window.
+   */
+  offsetId?: ListId;
+}) => void;
 type ResetScroll = () => void;
 type LoadMoreBackwards = (args: { offsetId?: string | number }) => void;
 
@@ -35,7 +43,7 @@ const useInfiniteScroll = <ListId extends string | number>({
   withResetOnInactive?: boolean;
   startFromEnd?: boolean;
   shouldKeepViewportAtEnd?: boolean;
-}): [ListId[]?, GetMore?, ResetScroll?] => {
+}): [ListId[]?, GetMore<ListId>?, ResetScroll?] => {
   const currentStateRef = useRef<{ viewportIds: ListId[]; isOnTop: boolean } | undefined>();
   if (!currentStateRef.current && listIds && !isDisabled) {
     const direction = startFromEnd ? LoadMoreDirection.Backwards : LoadMoreDirection.Forwards;
@@ -90,16 +98,19 @@ const useInfiniteScroll = <ListId extends string | number>({
     currentStateRef.current = undefined;
   }
 
-  const getMore: GetMore = useLastCallback(({
+  const getMore: GetMore<ListId> = useLastCallback(({
     direction,
-  }: { direction: LoadMoreDirection; noScroll?: boolean }) => {
+    offsetId: explicitOffsetId,
+  }) => {
     if (!isActive) return;
 
     const { viewportIds } = currentStateRef.current || {};
 
-    const offsetId = viewportIds
-      ? direction === LoadMoreDirection.Backwards ? viewportIds[viewportIds.length - 1] : viewportIds[0]
-      : undefined;
+    const offsetId = explicitOffsetId !== undefined
+      ? explicitOffsetId
+      : viewportIds
+        ? direction === LoadMoreDirection.Backwards ? viewportIds[viewportIds.length - 1] : viewportIds[0]
+        : undefined;
 
     if (!listIds) {
       if (loadMoreBackwards) {

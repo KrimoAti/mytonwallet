@@ -90,6 +90,7 @@ function AccountsGridView({
       isScrollOnWrap
       activeKey={activeTab}
       name="semiFade"
+      className={styles.accountsContainer}
       slideClassName={buildClassName(styles.contentSlide, 'custom-scroll')}
       onScroll={onScroll}
     >

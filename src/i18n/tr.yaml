@@ -1169,3 +1169,6 @@ Top %amount%: En iyi %amount%
 No subwallets yet.: Henüz alt cüzdan yok.
 $subwallets_found: "Bulundu: %1$d"
 Send, receive, and trade tokens and collectibles.: Tokenleri ve koleksiyon ürünlerini gönderin, alın ve takas edin.
+$overview_cell_size_small: Küçük
+$overview_cell_size_medium: Orta
+$overview_cell_size_big: Büyük

@@ -37,6 +37,7 @@ import {
   IS_ANDROID,
   IS_ANDROID_APP,
   IS_ELECTRON,
+  IS_FIREFOX,
   IS_IOS,
   IS_LINUX,
   IS_MAC_OS,
@@ -88,6 +89,9 @@ addActionHandler('init', (global, actions) => {
     }
     if (IS_OPERA) {
       documentElement.classList.add('is-opera');
+    }
+    if (IS_FIREFOX) {
+      documentElement.classList.add('is-firefox');
     }
     if (IS_EXTENSION) {
       documentElement.classList.add('is-extension');

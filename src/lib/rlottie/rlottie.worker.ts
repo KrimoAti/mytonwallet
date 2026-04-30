@@ -171,6 +171,13 @@ function applyColor(arr: Uint8ClampedArray, color: [number, number, number]) {
   }
 }
 
+function setColor(key: string, customColor: [number, number, number] | undefined) {
+  const renderer = renderers.get(key);
+  if (!renderer) return;
+
+  renderer.customColor = customColor;
+}
+
 function destroy(key: string, isRepeated = false) {
   try {
     const renderer = renderers.get(key)!;
@@ -188,6 +195,7 @@ const api = {
   'rlottie:init': init,
   'rlottie:changeData': changeData,
   'rlottie:renderFrames': renderFrames,
+  'rlottie:setColor': setColor,
   'rlottie:destroy': destroy,
 };
 

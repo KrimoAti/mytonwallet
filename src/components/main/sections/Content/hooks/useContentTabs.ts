@@ -255,7 +255,10 @@ export default function useContentTabs({
     }
 
     selectToken({ slug: undefined }, { forceOnHeavyAnimation: true });
-    setActiveContentTab({ tab });
+
+    // On desktop the default screen is Overview, not Assets
+    const targetTab = tab === ContentTab.Assets && isLandscape ? ContentTab.Overview : tab;
+    setActiveContentTab({ tab: targetTab });
   });
 
   const handleClickAsset = useLastCallback((slug: string) => {

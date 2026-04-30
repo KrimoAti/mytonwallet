@@ -91,6 +91,8 @@ class RLottie {
 
   private lastRenderAt?: number;
 
+  private colorGeneration = 0;
+
   static init(...args: ConstructorParameters<typeof RLottie>) {
     const [
       , canvas,
@@ -393,7 +395,61 @@ class RLottie {
   }
 
   setColor(newColor: [number, number, number] | undefined) {
+    if (areRgbEqual(this.customColor, newColor)) {
+      return;
+    }
     this.customColor = newColor;
+
+    // Push the new color to the worker eagerly so future `renderFrames` use it. Skipped before
+    // init because the worker has no renderer entry yet — `onRendererInit` will resync.
+    if (this.isRendererInited) {
+      void workers[this.workerIndex].request({
+        name: 'rlottie:setColor',
+        args: [this.renderId, newColor],
+      });
+    }
+
+    const wasActive = this.isAnimating || this.isWaiting;
+
+    // Stop the animate loop and drop cached bitmaps; in-flight `renderFrames` callbacks are
+    // dropped safely via the WAITING-marker check in `onFrameLoad` / `onColorRefreshFrame`.
+    this.isAnimating = false;
+    this.lastRenderAt = undefined;
+    this.frames.forEach((frame) => {
+      if (frame && frame !== WAITING) {
+        frame.close();
+      }
+    });
+    this.frames = [];
+    this.prevFrameIndex = -1;
+
+    // Defer the manual repaint while init or `changeData` is in flight: their completion
+    // handlers will resync color (init) and run `doPlay` which fetches fresh frames.
+    if (!this.isRendererInited || this.isChangingData) {
+      if (wasActive) this.isWaiting = true;
+      return;
+    }
+
+    // Repaint the current frame manually. Going through `doPlay` alone is not enough — its
+    // draw branch skips views with `isPaused`, leaving paused stickers (e.g. nav-bar icons)
+    // stuck in the old color until the next hover.
+    const frameIndex = Math.round(this.approxFrameIndex);
+    this.frames[frameIndex] = WAITING;
+    this.colorGeneration++;
+    const generation = this.colorGeneration;
+    const hasActiveView = Array.from(this.views.values()).some(({ isPaused }) => !isPaused);
+    const shouldResume = wasActive && hasActiveView;
+
+    void workers[this.workerIndex].request({
+      name: 'rlottie:renderFrames',
+      args: [
+        this.renderId,
+        frameIndex,
+        (loadedIndex: number, imageBitmap: ImageBitmap) => {
+          this.onColorRefreshFrame(generation, loadedIndex, imageBitmap, shouldResume);
+        },
+      ],
+    });
   }
 
   private initRenderer() {
@@ -425,6 +481,14 @@ class RLottie {
     this.msPerFrame = msPerFrame;
     this.framesCount = framesCount;
 
+    // Resync color: a `setColor` racing with the async worker init would have no-oped on the
+    // worker (renderer entry didn't exist yet). Re-send the current value to guarantee the
+    // upcoming `renderFrames` use the right tint.
+    void workers[this.workerIndex].request({
+      name: 'rlottie:setColor',
+      args: [this.renderId, this.customColor],
+    });
+
     if (this.pendingGoToFirstFrame) {
       this.pendingGoToFirstFrame = false;
       this.approxFrameIndex = 0;
@@ -450,6 +514,9 @@ class RLottie {
       }
     });
     this.frames = [];
+    // Invalidate in-flight `renderFrames` requests issued against the previous lottie data —
+    // their callbacks would otherwise satisfy a fresh WAITING marker at the same frame index.
+    this.colorGeneration++;
 
     this.tgsUrl = tgsUrl;
     this.initConfig();
@@ -624,10 +691,21 @@ class RLottie {
       return;
     }
     this.frames[frameIndex] = WAITING;
+    // Capture generation at send time. `setColor` / `changeData` bump it; the WAITING marker
+    // alone can't tell apart "waiting for the request I just sent" from "waiting for a request
+    // sent before the cache reset", so a stale bitmap could otherwise be accepted at the same
+    // frame index.
+    const generation = this.colorGeneration;
 
     void workers[this.workerIndex].request({
       name: 'rlottie:renderFrames',
-      args: [this.renderId, frameIndex, this.onFrameLoad.bind(this)],
+      args: [
+        this.renderId,
+        frameIndex,
+        (loadedIndex: number, imageBitmap: ImageBitmap) => {
+          this.onFrameLoad(generation, loadedIndex, imageBitmap);
+        },
+      ],
     });
   }
 
@@ -640,8 +718,16 @@ class RLottie {
     this.frames[prevFrameIndex] = undefined;
   }
 
-  private onFrameLoad(frameIndex: number, imageBitmap: ImageBitmap) {
-    if (this.frames[frameIndex] !== WAITING) {
+  private onFrameLoad(generation: number, frameIndex: number, imageBitmap: ImageBitmap) {
+    // Drop stale arrivals: cache reset (`setColor`/`changeData`) bumped the generation, or the
+    // slot has been freed/replaced. Close to release the GPU-backed bitmap; otherwise it leaks
+    // until the next GC.
+    if (
+      this.isDestroyed
+      || generation !== this.colorGeneration
+      || this.frames[frameIndex] !== WAITING
+    ) {
+      imageBitmap.close();
       return;
     }
 
@@ -651,6 +737,47 @@ class RLottie {
       this.doPlay();
     }
   }
+
+  private onColorRefreshFrame(
+    generation: number,
+    frameIndex: number,
+    imageBitmap: ImageBitmap,
+    shouldResume: boolean,
+  ) {
+    if (
+      this.isDestroyed
+      || generation !== this.colorGeneration
+      || this.frames[frameIndex] !== WAITING
+    ) {
+      imageBitmap.close();
+      return;
+    }
+
+    this.frames[frameIndex] = imageBitmap;
+
+    requestMutation(() => {
+      if (this.isDestroyed) return;
+      this.views.forEach((view) => {
+        const { ctx, coords: { x, y } = {} } = view;
+        ctx.clearRect(x || 0, y || 0, this.imgSize, this.imgSize);
+        ctx.drawImage(imageBitmap, x || 0, y || 0);
+      });
+      this.prevFrameIndex = frameIndex;
+
+      if (shouldResume && !this.isDestroyed) {
+        this.doPlay();
+      }
+    });
+  }
+}
+
+function areRgbEqual(
+  a: [number, number, number] | undefined,
+  b: [number, number, number] | undefined,
+) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 }
 
 function ensureCanvasSize(canvas: HTMLCanvasElement, sizeFactor: number) {

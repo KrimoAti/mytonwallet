@@ -5,6 +5,8 @@ import type { Theme } from '../../../../global/types';
 import { ContentTab } from '../../../../global/types';
 
 import { IS_CORE_WALLET } from '../../../../config';
+import { selectCurrentAccountSettings } from '../../../../global/selectors';
+import { ACCENT_COLORS } from '../../../../util/accentColor/constants';
 import buildClassName from '../../../../util/buildClassName';
 import { IS_TOUCH_ENV } from '../../../../util/windowEnvironment';
 import { ANIMATED_STICKERS_PATHS } from '../../../ui/helpers/animatedAssets';
@@ -27,10 +29,11 @@ interface StateProps {
   isAgentOpen?: boolean;
   isExploreOpen?: boolean;
   theme: Theme;
+  accentColorIndex?: number;
 }
 
 function LandscapeNavBar({
-  areSettingsOpen, isAgentOpen, isExploreOpen, theme,
+  areSettingsOpen, isAgentOpen, isExploreOpen, theme, accentColorIndex,
 }: StateProps) {
   const {
     switchToWallet, switchToAgent, switchToExplore, switchToSettings,
@@ -40,6 +43,7 @@ function LandscapeNavBar({
   const lang = useLang();
   const appTheme = useAppTheme(theme);
   const stickerPaths = ANIMATED_STICKERS_PATHS[appTheme];
+  const accentColor = accentColorIndex !== undefined ? ACCENT_COLORS[appTheme][accentColorIndex] : undefined;
 
   const isWalletActive = !areSettingsOpen && !isAgentOpen && !isExploreOpen;
 
@@ -57,6 +61,7 @@ function LandscapeNavBar({
         label={lang('Wallet')}
         tgsUrl={isWalletActive ? stickerPaths.iconWalletSolid : stickerPaths.iconWallet}
         previewUrl={isWalletActive ? stickerPaths.preview.iconWalletSolid : stickerPaths.preview.iconWallet}
+        accentColor={accentColor}
         onClick={handleWalletClick}
       />
       {!IS_CORE_WALLET && (
@@ -66,6 +71,7 @@ function LandscapeNavBar({
             label={lang('Agent')}
             tgsUrl={isAgentOpen ? stickerPaths.iconAgentSolid : stickerPaths.iconAgent}
             previewUrl={isAgentOpen ? stickerPaths.preview.iconAgentSolid : stickerPaths.preview.iconAgent}
+            accentColor={accentColor}
             onClick={switchToAgent}
           />
           <NavButton
@@ -73,6 +79,7 @@ function LandscapeNavBar({
             label={lang('Explore')}
             tgsUrl={isExploreOpen ? stickerPaths.iconExploreSolid : stickerPaths.iconExplore}
             previewUrl={isExploreOpen ? stickerPaths.preview.iconExploreSolid : stickerPaths.preview.iconExplore}
+            accentColor={accentColor}
             onClick={switchToExplore}
           />
         </>
@@ -82,6 +89,7 @@ function LandscapeNavBar({
         label={lang('Settings')}
         tgsUrl={areSettingsOpen ? stickerPaths.iconSettingsSolid : stickerPaths.iconSettings}
         previewUrl={areSettingsOpen ? stickerPaths.preview.iconSettingsSolid : stickerPaths.preview.iconSettings}
+        accentColor={accentColor}
         onClick={switchToSettings}
       />
     </div>
@@ -96,16 +104,18 @@ export default memo(withGlobal((global): StateProps => {
     isAgentOpen,
     isExploreOpen,
     theme: global.settings.theme,
+    accentColorIndex: selectCurrentAccountSettings(global)?.accentColorIndex,
   };
 })(LandscapeNavBar));
 
 function NavButtonInternal({
-  label, tgsUrl, previewUrl, isActive, onClick,
+  label, tgsUrl, previewUrl, isActive, accentColor, onClick,
 }: {
   isActive?: boolean;
   label: string;
   tgsUrl: string;
   previewUrl: string;
+  accentColor?: string;
   onClick: NoneToVoidFunction;
 }) {
   const [isAnimating, startAnimation, stopAnimation] = useFlag();
@@ -129,6 +139,7 @@ function NavButtonInternal({
         nonInteractive
         forceOnHeavyAnimation
         className={styles.icon}
+        color={accentColor}
         tgsUrl={tgsUrl}
         previewUrl={previewUrl}
         onEnded={stopAnimation}

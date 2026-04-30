@@ -7,9 +7,11 @@ import type { StakingStateStatus } from '../../../../util/staking';
 import { ANIMATED_STICKER_ICON_PX } from '../../../../config';
 import {
   selectAccountStakingState,
+  selectAccountStakingStatesBySlug,
   selectCurrentAccount,
   selectCurrentAccountId,
   selectCurrentAccountSettings,
+  selectCurrentAccountState,
   selectIsCurrentAccountViewMode,
   selectIsOffRampAllowed,
   selectIsStakingDisabled,
@@ -46,10 +48,14 @@ interface ActionButtonProps {
   onClick: NoneToVoidFunction;
 }
 
+interface OwnProps {
+  className?: string;
+}
+
 interface StateProps {
   isViewMode: boolean;
   isSwapDisabled?: boolean;
-  isStakingDisabled?: boolean;
+  isEarnHidden: boolean;
   isOnRampDisabled?: boolean;
   isOffRampDisabled?: boolean;
   accountByChain?: Account['byChain'];
@@ -61,14 +67,15 @@ interface StateProps {
 function LandscapeTopActions({
   isViewMode,
   isSwapDisabled,
-  isStakingDisabled,
+  isEarnHidden,
   isOnRampDisabled,
   isOffRampDisabled,
   accountByChain,
   stakingStatus,
   theme,
   accentColorIndex,
-}: StateProps) {
+  className,
+}: OwnProps & StateProps) {
   const {
     startTransfer,
     startSwap,
@@ -128,11 +135,11 @@ function LandscapeTopActions({
   );
 
   if (isViewMode) {
-    return <div className={styles.root}>{depositButton}</div>;
+    return <div className={buildClassName(styles.root, className)}>{depositButton}</div>;
   }
 
   return (
-    <div ref={containerRef} className={buildClassName(styles.root, 'no-scrollbar')}>
+    <div ref={containerRef} className={buildClassName(styles.root, 'no-scrollbar', className)}>
       {!isOnRampDisabled && onRampChain && (
         <ActionButton
           label={lang('Buy')}
@@ -143,6 +150,13 @@ function LandscapeTopActions({
         />
       )}
       {depositButton}
+      <ActionButton
+        label={lang('Send')}
+        tgsUrl={stickerPaths.iconSend}
+        previewUrl={stickerPaths.preview.iconSend}
+        accentColor={accentColor}
+        onClick={handleSendClick}
+      />
       {!isSwapDisabled && (
         <ActionButton
           label={lang('Trade')}
@@ -152,7 +166,7 @@ function LandscapeTopActions({
           onClick={handleTradeClick}
         />
       )}
-      {!isStakingDisabled && (
+      {!isEarnHidden && (
         <ActionButton
           label={lang(STAKING_TAB_TEXT_VARIANTS[stakingStatus])}
           className={stakingStatus !== 'inactive' ? styles.button_purple : undefined}
@@ -171,27 +185,24 @@ function LandscapeTopActions({
           onClick={handleSellClick}
         />
       )}
-      <ActionButton
-        label={lang('Send')}
-        tgsUrl={stickerPaths.iconSend}
-        previewUrl={stickerPaths.preview.iconSend}
-        accentColor={accentColor}
-        onClick={handleSendClick}
-      />
     </div>
   );
 }
 
 export default memo(
-  withGlobal(
+  withGlobal<OwnProps>(
     (global): StateProps => {
       const accountId = selectCurrentAccountId(global);
       const stakingState = accountId ? selectAccountStakingState(global, accountId) : undefined;
+      const currentTokenSlug = selectCurrentAccountState(global)?.currentTokenSlug;
+      const stakingStatesBySlug = accountId ? selectAccountStakingStatesBySlug(global, accountId) : undefined;
+      const isEarnHidden = selectIsStakingDisabled(global)
+        || (currentTokenSlug !== undefined && !stakingStatesBySlug?.[currentTokenSlug]);
 
       return {
         isViewMode: selectIsCurrentAccountViewMode(global),
         isSwapDisabled: selectIsSwapDisabled(global),
-        isStakingDisabled: selectIsStakingDisabled(global),
+        isEarnHidden,
         isOnRampDisabled: global.restrictions.isOnRampDisabled,
         isOffRampDisabled: !selectIsOffRampAllowed(global),
         accountByChain: selectCurrentAccount(global)?.byChain,

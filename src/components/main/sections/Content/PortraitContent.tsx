@@ -187,7 +187,7 @@ function PortraitContent({
     if (hasNftSelection) {
       header = <NftSelectionHeader />;
     } else if (currentCollection) {
-      header = <NftCollectionHeader key="collection" />;
+      header = <NftCollectionHeader collection={currentCollection} key={currentCollection.address} />;
     } else {
       header = (
         <TabList

@@ -1,7 +1,7 @@
 @font-face {
     font-family: "brilliant-icons";
-    src: url("./brilliant-icons.woff?8db4c9a7d6be6b5be2ab76380ad94779") format("woff"),
-url("./brilliant-icons.woff2?8db4c9a7d6be6b5be2ab76380ad94779") format("woff2");
+    src: url("./brilliant-icons.woff?475b63305b3f2ebd97a8bb58b5a285ca") format("woff"),
+url("./brilliant-icons.woff2?475b63305b3f2ebd97a8bb58b5a285ca") format("woff2");
     font-weight: normal;
     font-style: normal;
     font-display: block;
@@ -396,102 +396,105 @@ url("./brilliant-icons.woff2?8db4c9a7d6be6b5be2ab76380ad94779") format("woff2");
 .icon-share::before {
     content: "\f17f";
 }
-.icon-show-all::before {
+.icon-show-all-collectibles::before {
     content: "\f180";
 }
-.icon-snow::before {
+.icon-show-all::before {
     content: "\f181";
 }
-.icon-sort::before {
+.icon-snow::before {
     content: "\f182";
 }
-.icon-spinner::before {
+.icon-sort::before {
     content: "\f183";
 }
-.icon-star-filled::before {
+.icon-spinner::before {
     content: "\f184";
 }
-.icon-star::before {
+.icon-star-filled::before {
     content: "\f185";
 }
-.icon-subwallet-add::before {
+.icon-star::before {
     content: "\f186";
 }
-.icon-subwallet-change::before {
+.icon-subwallet-add::before {
     content: "\f187";
 }
-.icon-swap::before {
+.icon-subwallet-change::before {
     content: "\f188";
 }
-.icon-switch::before {
+.icon-swap::before {
     content: "\f189";
 }
-.icon-tag::before {
+.icon-switch::before {
     content: "\f18a";
 }
-.icon-telegram-filled::before {
+.icon-tag::before {
     content: "\f18b";
 }
-.icon-telegram::before {
+.icon-telegram-filled::before {
     content: "\f18c";
 }
-.icon-testnet::before {
+.icon-telegram::before {
     content: "\f18d";
 }
-.icon-tonexplorer-small::before {
+.icon-testnet::before {
     content: "\f18e";
 }
-.icon-tonexplorer::before {
+.icon-tonexplorer-small::before {
     content: "\f18f";
 }
-.icon-tooltip::before {
+.icon-tonexplorer::before {
     content: "\f190";
 }
-.icon-touch-id::before {
+.icon-tooltip::before {
     content: "\f191";
 }
-.icon-trash-small::before {
+.icon-touch-id::before {
     content: "\f192";
 }
-.icon-trash::before {
+.icon-trash-small::before {
     content: "\f193";
 }
-.icon-update::before {
+.icon-trash::before {
     content: "\f194";
 }
-.icon-usd::before {
+.icon-update::before {
     content: "\f195";
 }
-.icon-verification::before {
+.icon-usd::before {
     content: "\f196";
 }
-.icon-versions::before {
+.icon-verification::before {
     content: "\f197";
 }
-.icon-view-landscape::before {
+.icon-versions::before {
     content: "\f198";
 }
-.icon-view-portrait::before {
+.icon-view-landscape::before {
     content: "\f199";
 }
-.icon-wallet-add::before {
+.icon-view-portrait::before {
     content: "\f19a";
 }
-.icon-wallet-outline::before {
+.icon-wallet-add::before {
     content: "\f19b";
 }
-.icon-wallet-view::before {
+.icon-wallet-outline::before {
     content: "\f19c";
 }
-.icon-wallet::before {
+.icon-wallet-view::before {
     content: "\f19d";
 }
-.icon-windows-close::before {
+.icon-wallet::before {
     content: "\f19e";
 }
-.icon-windows-maximize::before {
+.icon-windows-close::before {
     content: "\f19f";
 }
-.icon-windows-minimize::before {
+.icon-windows-maximize::before {
     content: "\f1a0";
+}
+.icon-windows-minimize::before {
+    content: "\f1a1";
 }

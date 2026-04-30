@@ -120,6 +120,7 @@ const DATE_ID_PREFIX = 'date:';
 
 const EMPTY_ARRAY = Object.freeze([]);
 const EMPTY_DICTIONARY = Object.freeze({});
+const TOP_SPACE = 1;
 
 function Activities({
   isActive,
@@ -242,7 +243,7 @@ function Activities({
     if (!container) return;
 
     const shouldSetExplicitHeight = !isLandscape || Boolean(scrollContainerSelector);
-    setExtraStyles(container, { height: shouldSetExplicitHeight ? `${currentContainerHeight}rem` : '' });
+    setExtraStyles(container, { height: shouldSetExplicitHeight ? `${currentContainerHeight + TOP_SPACE}rem` : '' });
   }, [isLandscape, currentContainerHeight, scrollContainerSelector]);
 
   // Requests the history when the UI shows a spinner instead of the list.

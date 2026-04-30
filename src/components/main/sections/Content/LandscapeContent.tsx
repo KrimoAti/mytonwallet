@@ -28,6 +28,7 @@ import useContentTabs from './hooks/useContentTabs';
 
 import Transition from '../../../ui/Transition';
 import HideNftModal from '../../modals/HideNftModal';
+import LandscapeTopActions from '../Actions/LandscapeTopActions';
 import ContentSlide from './ContentSlide';
 import LandscapeWalletOverview from './LandscapeWalletOverview';
 import NftCollectionHeader from './NftCollectionHeader';
@@ -183,7 +184,9 @@ function LandscapeContent({
 
   function renderHeader() {
     if (hasNftSelection) return <NftSelectionHeader />;
-    if (currentCollection) return <NftCollectionHeader key="collection" />;
+    if (currentCollection) {
+      return <NftCollectionHeader collection={currentCollection} key={currentCollection.address} />;
+    }
 
     return (
       <OverviewBackHeader
@@ -203,11 +206,14 @@ function LandscapeContent({
       );
     }
 
+    const isActivitySlide = tabs[currentKey - 1]?.id === ContentTab.Activity;
+
     return (
       <div className={styles.landscapeContentPanel}>
+        {isActivitySlide && <LandscapeTopActions className={styles.topActions} />}
         {renderHeader()}
         <div className={styles.slides}>
-          <div className={buildClassName(styles.landscapeSlide, 'custom-scroll')}>
+          <div className={buildClassName(styles.landscapeSlide, 'custom-scroll', 'landscape-content-scroll')}>
             <ContentSlide
               isActive={isSlideActive}
               isPortrait={false}

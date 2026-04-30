@@ -17,6 +17,8 @@ $cellWidth: calc((#{v.$landscapeMainContentMaxWidth} - 1rem - 0.75rem) / 2);
 }
 
 .card {
+  position: relative;
+
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -29,20 +31,43 @@ $cellWidth: calc((#{v.$landscapeMainContentMaxWidth} - 1rem - 0.75rem) / 2);
 }
 
 .body {
-  position: relative;
-
+  overflow-y: auto;
   display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 
-  min-width: $cellWidth;
-  min-height: $cellWidth;
+  width: 100%;
+  // Body sizes to its content but never grows past the size-specific limit, so cells with little
+  // content stay compact and cells with overflowing content scroll internally up to the cap.
+  max-height: var(--overview-cell-body-height, #{$cellWidth});
 
-  @include mixins.separatorList(3.875rem);
+  &:global(:has(.content-centered)) {
+    margin-top: auto;
+    margin-bottom: auto;
+  }
+}
+
+.sizeSmall {
+  --overview-cell-body-height: 29rem;
+}
+
+.sizeMedium {
+  --overview-cell-body-height: 41rem;
+}
+
+.sizeBig {
+  --overview-cell-body-height: 121rem;
+}
+
+.bodyWithShowAll {
+  padding-bottom: 3rem;
 }
 
 .showAll {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -56,7 +81,12 @@ $cellWidth: calc((#{v.$landscapeMainContentMaxWidth} - 1rem - 0.75rem) / 2);
   color: var(--color-accent);
   text-align: left;
 
-  background: transparent;
+  background-color: var(--color-background-first);
+
+  @supports (backdrop-filter: var(--filter-blur-bar)) {
+    background-color: var(--color-background-first-blur);
+    backdrop-filter: var(--filter-blur-bar);
+  }
 
   @include mixins.transition(background-color 200ms);
 
@@ -72,6 +102,9 @@ $cellWidth: calc((#{v.$landscapeMainContentMaxWidth} - 1rem - 0.75rem) / 2);
   }
 
   @include mixins.active-transition-optimization();
+
+  @include mixins.separatorListTop();
+
 }
 
 .showAllIcon {
@@ -79,54 +112,67 @@ $cellWidth: calc((#{v.$landscapeMainContentMaxWidth} - 1rem - 0.75rem) / 2);
   font-size: 1.5rem;
 }
 
-.showAllLabel {
+.caption {
+  display: flex;
+  flex-direction: row;
+  gap: 0.125rem;
+  align-items: center;
+
+  height: 1.25rem;
+  margin-inline-end: auto;
+  padding-left: 1rem;
+
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  color: var(--color-black);
+}
+
+.captionTitleRow {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 1;
+  gap: 0.25rem;
+  align-items: center;
+
+  min-width: 0;
+  height: 1.25rem;
+}
+
+.showAllLabel,
+.captionTitle {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.showAllAmount {
-  margin-inline-start: 0.25rem;
+.captionBadge {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
   padding: 0.1875rem 0.1875rem 0.125rem;
   border-radius: 0.25rem;
 
   font-size: 0.625rem;
-  line-height: 0.625rem;
-
-  background-color: var(--color-accent-10o);
-}
-
-.caption {
-  overflow: hidden;
-
-  min-height: 1.125rem;
-
-  font-size: 0.75rem;
   font-weight: 700;
-  line-height: 1.125rem;
-  color: var(--color-black);
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 0.625rem;
+  color: var(--color-gray-1);
+
+  background: var(--color-gray-1-10o);
 }
 
 .captionInteractive {
   cursor: var(--custom-cursor, pointer);
   user-select: none;
-
-  position: relative;
-
-  display: flex;
-  gap: 0.125rem;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
 }
 
 .captionIcon {
-  font-size: 0.375rem;
-  color: var(--color-black);
+  flex-shrink: 0;
+  font-size: 0.5rem;
+  color: var(--color-gray-2);
 }
 
 .menu {

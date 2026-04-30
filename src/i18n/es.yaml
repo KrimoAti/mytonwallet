@@ -1174,3 +1174,6 @@ $subwallets_found:
   oneValue: "Encontrada: %1$d"
   otherValue: "Encontradas: %1$d"
 Send, receive, and trade tokens and collectibles.: Envía, recibe e intercambia tokens y coleccionables.
+$overview_cell_size_small: Pequeño
+$overview_cell_size_medium: Mediano
+$overview_cell_size_big: Grande
